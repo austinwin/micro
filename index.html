@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hyper Microloop</title>
+  <title>Microhyper</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -29,9 +29,38 @@
       transform: translateY(0);
       opacity: 1;
     }
+
+    /* Modal Styles */
+    #api-key-modal {
+      transition: opacity 0.5s ease-in-out;
+      opacity: 0;
+    }
+    #api-key-modal.show {
+      opacity: 1;
+    }
   </style>
 </head>
 <body class="text-white text-sm md:text-base">
+  <!-- API Key Modal -->
+  <div id="api-key-modal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center hidden">
+    <div class="glass p-6 rounded-2xl max-w-md w-full mx-4 shadow-2xl border border-violet-500/30">
+      <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <i class="fas fa-key text-violet-400"></i> Authentication Required
+      </h2>
+      <p class="text-sm opacity-70 mb-4">Please enter your API Access Token to continue.</p>
+      <input type="password" id="api-key-input" placeholder="Enter API Key" class="w-full px-4 py-3 rounded-lg bg-black/40 border border-white/10 focus:border-violet-500 focus:outline-none mb-4 text-white" />
+      
+      <div class="flex items-center gap-2 mb-4">
+        <input type="checkbox" id="remember-me" class="w-4 h-4 rounded border-white/10 bg-black/40 accent-violet-600 focus:ring-violet-500">
+        <label for="remember-me" class="text-xs opacity-70 cursor-pointer select-none">Remember me (Save to LocalStorage)</label>
+      </div>
+
+      <button onclick="saveApiKey()" class="w-full py-3 btn-primary rounded-xl font-bold bg-violet-600 hover:bg-violet-700">
+        Connect
+      </button>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg hidden">
     <p id="toast-message"></p>
@@ -52,7 +81,7 @@
         <div class="glass rounded-2xl p-4 md:p-6 glow">
           <div class="flex items-center justify-between mb-4 gap-4">
             <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2">
-              <i class="fas fa-chart-line text-green-400"></i> Microloop
+              <i class="fas fa-chart-line text-green-400"></i> Microhyper
             </h2>
             <div class="flex gap-2 text-xs md:text-sm">
               <button id="btn-close-position" class="px-3 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-700 flex items-center gap-1" onclick="closePosition()">
@@ -149,19 +178,75 @@
 
     <!-- Footer -->
     <div class="text-center mt-6 opacity-60 text-xs md:text-sm">
-      <p>Microloop@2025 • <span id="clock"></span></p>
-      <!--
-      To launch backend:
-      uvicorn main:app --reload --port 8000
-      To launch frontend:
-      python3 -m http.server 8080
-      Then open http://localhost:8080/index.html in your browser.
-      -->
+      <p>Microhyper@2025 • <span id="clock"></span></p>
     </div>
   </div>
 
   <script>
-    const API_BASE = "http://192.168.1.167:8000"; // Change to your deployed URL, or leave empty if same origin
+    const API_BASE = "http://192.168.1.167:8000"; 
+    
+    // --- Auth Logic ---
+    function getStoredKey() {
+      return sessionStorage.getItem('MICROHYPER_API_KEY') || localStorage.getItem('MICROHYPER_API_KEY');
+    }
+
+    function clearStoredKey() {
+      sessionStorage.removeItem('MICROHYPER_API_KEY');
+      localStorage.removeItem('MICROHYPER_API_KEY');
+    }
+
+    axios.interceptors.request.use(config => {
+      const apiKey = getStoredKey();
+      if (apiKey) {
+        config.headers['X-API-Key'] = apiKey;
+      }
+      return config;
+    }, error => Promise.reject(error));
+
+    axios.interceptors.response.use(response => response, error => {
+      if (error.response && (error.response.status === 403 || error.response.status === 401)) {
+        clearStoredKey();
+        showApiKeyModal();
+      }
+      return Promise.reject(error);
+    });
+
+    function showApiKeyModal() {
+      const modal = document.getElementById('api-key-modal');
+      modal.classList.remove('hidden');
+      // Small delay to allow display change to render before opacity transition
+      setTimeout(() => {
+        modal.classList.add('show');
+      }, 10);
+    }
+
+    function saveApiKey() {
+      const input = document.getElementById('api-key-input');
+      const rememberMe = document.getElementById('remember-me').checked;
+      const key = input.value.trim();
+      
+      if (key) {
+        if (rememberMe) {
+          localStorage.setItem('MICROHYPER_API_KEY', key);
+        } else {
+          sessionStorage.setItem('MICROHYPER_API_KEY', key);
+        }
+        
+        const modal = document.getElementById('api-key-modal');
+        modal.classList.remove('show');
+        // Wait for transition to finish before hiding
+        setTimeout(() => {
+          modal.classList.add('hidden');
+        }, 500);
+        
+        fetchStatus();
+        fetchMiniChart();
+      } else {
+        input.classList.add('border-red-500');
+      }
+    }
+    // ------------------
+
     let selectedDirection = "LONG";
     let chartInterval = "3m"; // Default to 3m
 
@@ -385,7 +470,7 @@
           <div class="text-base md:text-lg font-bold ${isLong ? 'text-green-400' : 'text-red-400'} leading-tight">
             ${isLong ? 'LONG' : 'SHORT'} ${parseFloat(pos.szi).toFixed(2)}
           </div>
-          <div class="text-[10px] md:text-xs opacity-80 mt-0.5">@${parseFloat(pos.entryPx).toFixed(2)} • <span class="${pnlColor}">$${pnl.toFixed(2)}</span></div>
+          <div class="text-[10px] md:text-xs opacity-80 mt-0.5">@$${parseFloat(pos.entryPx).toFixed(2)} • <span class="${pnlColor}">$${pnl.toFixed(2)}</span></div>
         `;
       } else {
         positionEl.innerHTML = `
@@ -630,13 +715,19 @@
     // Live clock & status refresh
     setInterval(() => {
       document.getElementById("clock").textContent = new Date().toLocaleTimeString();
-      fetchStatus();
-      fetchMiniChart();
+      if (getStoredKey()) {
+        fetchStatus();
+        fetchMiniChart();
+      }
     }, 5000); // Refresh every 5 seconds
     
     // Initial load
-    fetchStatus();
-    fetchMiniChart();
+    if (!getStoredKey()) {
+        showApiKeyModal();
+    } else {
+        fetchStatus();
+        fetchMiniChart();
+    }
   </script>
 </body>
 </html>
