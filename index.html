@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hyperliquid Sentinel — Trading Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
+    .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); }
+    .glow { box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
+    .btn-primary { transition: all 0.3s; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+    .signal-long { background: linear-gradient(45deg, #22c55e, #16a34a); }
+    .signal-short { background: linear-gradient(45deg, #ef4444, #dc2626); }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+    #toast {
+      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+      transform: translateY(-100px);
+      opacity: 0;
+    }
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="text-white">
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg hidden">
+    <p id="toast-message"></p>
+  </div>
+
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Status Dashboard -->
+    <div id="status-dashboard" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-center">
+      <div id="status-current-price" class="glass rounded-lg p-4"></div>
+      <div id="status-available-margin" class="glass rounded-lg p-4"></div>
+      <div id="status-open-position" class="glass rounded-lg p-4 col-span-2 md:col-span-1"></div>
+      <div id="status-open-orders" class="glass rounded-lg p-4 col-span-2 md:col-span-1"></div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-8">
+      <!-- Manual Trade Panel -->
+      <div class="lg:col-span-2">
+        <div class="glass rounded-2xl p-8 glow">
+          <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+            <i class="fas fa-chart-line text-green-400"></i> Execute Manual Trade
+          </h2>
+
+          <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <!-- Pair -->
+            <div>
+              <label class="block text-sm font-medium mb-2">Trading Pair</label>
+              <select id="pair" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-violet-500 focus:outline-none">
+                <option>SOL/USD</option>
+                <option>BTC/USD</option>
+                <option>ETH/USD</option>
+                <option>AVAX/USD</option>
+              </select>
+            </div>
+
+            <!-- Direction -->
+            <div>
+              <label class="block text-sm font-medium mb-2">Direction</label>
+              <div class="grid grid-cols-2 gap-4">
+                <button onclick="setDirection('LONG')" id="btn-long" class="py-4 rounded-lg font-bold text-lg signal-long text-white">
+                  <i class="fas fa-arrow-up mr-2"></i> LONG
+                </button>
+                <button onclick="setDirection('SHORT')" id="btn-short" class="py-4 rounded-lg font-bold text-lg bg-white/10 hover:bg-white/20">
+                  <i class="fas fa-arrow-down mr-2"></i> SHORT
+                </button>
+              </div>
+            </div>
+
+            <!-- Leverage -->
+            <div>
+              <label class="block text-sm font-medium mb-2">Leverage</label>
+              <input type="number" id="leverage" value="20" min="1" max="50" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-violet-500 focus:outline-none"/>
+            </div>
+
+            <!-- Position Size USD -->
+            <div>
+              <label class="block text-sm font-medium mb-2">Position Size (USD)</label>
+              <input type="number" step="1" id="size_usd" value="50" min="1" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-violet-500 focus:outline-none"/>
+            </div>
+
+            <!-- Take Profit Price -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-2">Take Profit Price (Optional)</label>
+              <input type="number" step="0.01" id="tp_price" placeholder="Leave empty for no TP" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-violet-500 focus:outline-none"/>
+            </div>
+          </div>
+
+          <div class="flex gap-4">
+            <button onclick="executeTrade()" class="flex-1 py-5 btn-primary rounded-xl font-bold text-xl bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800">
+              <i class="fas fa-paper-plane mr-3"></i> Execute Trade
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-12 opacity-60 text-sm">
+      <p>Hyperliquid Sentinel Manual Dashboard • <span id="clock"></span></p>
+      <!--
+      To launch backend:
+      uvicorn main:app --reload --port 8000
+      To launch frontend:
+      python3 -m http.server 8080
+      Then open http://localhost:8080/index.html in your browser.
+      -->
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://192.168.1.167:8000"; // Change to your deployed URL, or leave empty if same origin
+    let selectedDirection = "LONG";
+
+    function showToast(message, isError = false) {
+      const toast = document.getElementById("toast");
+      const toastMessage = document.getElementById("toast-message");
+      
+      toastMessage.textContent = message;
+      toast.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg`; // Reset classes
+      if (isError) {
+        toast.classList.add('bg-red-600');
+      } else {
+        toast.classList.add('bg-green-600');
+      }
+      
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('show');
+      }, 10); // Small delay to trigger transition
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 500);
+      }, 3000);
+    }
+
+    function setDirection(dir) {
+      selectedDirection = dir;
+      document.getElementById("btn-long").classList.toggle("signal-long", dir === "LONG");
+      document.getElementById("btn-long").classList.toggle("bg-white/10", dir !== "LONG");
+      document.getElementById("btn-short").classList.toggle("signal-short", dir === "SHORT");
+      document.getElementById("btn-short").classList.toggle("bg-white/10", dir !== "SHORT");
+      document.getElementById("btn-long").classList.toggle("text-white", dir === "LONG");
+      document.getElementById("btn-short").classList.toggle("text-white", dir === "SHORT");
+    }
+
+    async function executeTrade(counter = false) {
+      const payload = {
+        pair: document.getElementById("pair").value,
+        direction: selectedDirection,
+        leverage: parseFloat(document.getElementById("leverage").value),
+        trade_size_usd: parseFloat(document.getElementById("size_usd").value),
+        profit_take: document.getElementById("tp_price").value ? parseFloat(document.getElementById("tp_price").value) : null,
+        follow_signal: !counter
+      };
+      try {
+        const res = await axios.post(`${API_BASE}/trade`, payload);
+        
+        if (res.data.status === 'filled') {
+          showToast(`Trade executed successfully! Size: ${res.data.detail.size}`);
+        } else {
+          showToast(`Trade status: ${res.data.status}. ${res.data.detail?.detail || ''}`, true);
+        }
+        fetchStatus(); // Refresh status after trade
+      } catch (err) {
+        const errorMessage = err.response?.data?.detail || err.message;
+        showToast(`Trade failed: ${errorMessage}`, true);
+      }
+    }
+
+    function renderStatus(data) {
+      const priceEl = document.getElementById('status-current-price');
+      const marginEl = document.getElementById('status-available-margin');
+      const positionEl = document.getElementById('status-open-position');
+      const ordersEl = document.getElementById('status-open-orders');
+
+      // Current Price
+      const price = parseFloat(data.current_price);
+      priceEl.innerHTML = `
+        <div class="text-sm opacity-70">Current Price</div>
+        <div class="text-2xl font-bold">${price ? `$${price.toFixed(2)}` : 'N/A'}</div>
+      `;
+
+      // Available Margin
+      const margin = parseFloat(data.available_margin);
+      marginEl.innerHTML = `
+        <div class="text-sm opacity-70">Available to Trade</div>
+        <div class="text-2xl font-bold">${margin ? `$${margin.toFixed(2)}` : '$0.00'}</div>
+      `;
+
+      // Open Position
+      if (data.open_position) {
+        const pos = data.open_position;
+        const isLong = parseFloat(pos.szi) > 0;
+        const pnl = parseFloat(pos.unrealizedPnl);
+        const pnlColor = pnl >= 0 ? 'text-green-400' : 'text-red-400';
+        positionEl.innerHTML = `
+          <div class="text-sm opacity-70">Open Position</div>
+          <div class="text-lg font-bold ${isLong ? 'text-green-400' : 'text-red-400'}">
+            ${isLong ? 'LONG' : 'SHORT'} ${parseFloat(pos.szi).toFixed(2)} ${pos.coin}
+          </div>
+          <div class="text-xs">Entry: $${parseFloat(pos.entryPx).toFixed(2)} | PnL: <span class="${pnlColor}">$${pnl.toFixed(2)}</span></div>
+        `;
+      } else {
+        positionEl.innerHTML = `
+          <div class="text-sm opacity-70">Open Position</div>
+          <div class="text-2xl font-bold opacity-50">None</div>
+        `;
+      }
+
+      // Open Orders
+      if (data.open_orders && data.open_orders.length > 0) {
+        const order = data.open_orders[0]; // Display first order
+        const isBuy = order.side === 'B';
+        let sideText = isBuy ? 'BUY' : 'SELL';
+        if (order.reduceOnly) {
+             sideText = isBuy ? 'Close Short' : 'Close Long';
+        }
+
+        ordersEl.innerHTML = `
+          <div class="text-sm opacity-70">Open Order</div>
+          <div class="text-lg font-bold ${isBuy ? 'text-green-400' : 'text-red-400'}">
+            ${sideText} ${parseFloat(order.sz).toFixed(2)} @ $${parseFloat(order.limitPx).toFixed(2)}
+          </div>
+           <div class="text-xs opacity-60">${data.open_orders.length > 1 ? `(+${data.open_orders.length - 1} more)`: ''}</div>
+        `;
+      } else {
+        ordersEl.innerHTML = `
+          <div class="text-sm opacity-70">Open Orders</div>
+          <div class="text-2xl font-bold opacity-50">None</div>
+        `;
+      }
+    }
+
+    async function fetchStatus() {
+      try {
+        const pair = document.getElementById("pair").value;
+        const res = await axios.get(`${API_BASE}/status?pair=${pair}`);
+        renderStatus(res.data);
+      } catch (err) {
+        console.error("Failed to fetch status:", err);
+        // Optionally show a toast for status fetch failure
+      }
+    }
+    
+    document.getElementById("pair").addEventListener("change", fetchStatus);
+
+    // Live clock & status refresh
+    setInterval(() => {
+      document.getElementById("clock").textContent = new Date().toLocaleTimeString();
+      fetchStatus();
+    }, 5000); // Refresh every 5 seconds
+    
+    // Initial load
+    fetchStatus();
+  </script>
+</body>
+</html>
