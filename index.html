@@ -328,6 +328,17 @@
     let selectedDirection = "LONG";
     let chartInterval = "3m"; // Default to 3m
 
+    function formatPrice(num) {
+      if (num === null || num === undefined || isNaN(num)) return 'N/A';
+      const val = parseFloat(num);
+      if (val === 0) return '0.00';
+      const absVal = Math.abs(val);
+      if (absVal < 0.00001) return val.toExponential(4);
+      if (absVal < 1) return val.toFixed(6).replace(/\.?0+$/, "");
+      if (absVal < 10) return val.toFixed(4).replace(/\.?0+$/, "");
+      return val.toFixed(2);
+    }
+
     function setLoading(isLoading, btnId = null) {
       const buttons = document.querySelectorAll('button');
       buttons.forEach(btn => {
@@ -580,15 +591,15 @@
         statsContainer.innerHTML = `
             <div class="px-2 py-1 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2" title="Realized PnL (24h)">
                 <span class="opacity-50 uppercase tracking-wider text-[10px]">24h PnL</span>
-                <span class="font-mono font-bold ${pnl24h >= 0 ? 'text-green-400' : 'text-red-400'}">${pnl24h >= 0 ? '+' : ''}$${pnl24h.toFixed(2)}</span>
+                <span class="font-mono font-bold ${pnl24h >= 0 ? 'text-green-400' : 'text-red-400'}">${pnl24h >= 0 ? '+' : ''}$${formatPrice(pnl24h)}</span>
             </div>
             <div class="px-2 py-1 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2" title="Total Fees (24h)">
                 <span class="opacity-50 uppercase tracking-wider text-[10px]">Fees</span>
-                <span class="font-mono font-bold text-orange-300">$${fees24h.toFixed(2)}</span>
+                <span class="font-mono font-bold text-orange-300">$${formatPrice(fees24h)}</span>
             </div>
             <div class="px-2 py-1 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2" title="Net PnL after Fees (24h)">
                 <span class="opacity-50 uppercase tracking-wider text-[10px]">Net</span>
-                <span class="font-mono font-bold ${netPnl24h >= 0 ? 'text-green-400' : 'text-red-400'}">${netPnl24h >= 0 ? '+' : ''}$${netPnl24h.toFixed(2)}</span>
+                <span class="font-mono font-bold ${netPnl24h >= 0 ? 'text-green-400' : 'text-red-400'}">${netPnl24h >= 0 ? '+' : ''}$${formatPrice(netPnl24h)}</span>
             </div>
             <div class="px-2 py-1 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2" title="Longs Opened (24h)">
                 <span class="opacity-50 uppercase tracking-wider text-[10px]">Longs</span>
@@ -605,7 +616,7 @@
         const isProfit = t.pnl > 0;
         const isLoss = t.pnl < 0;
         const pnlClass = isProfit ? 'text-green-400' : (isLoss ? 'text-red-400' : 'opacity-50');
-        const pnlText = t.pnl !== 0 ? (t.pnl > 0 ? '+' : '') + `$${t.pnl.toFixed(2)}` : '-';
+        const pnlText = t.pnl !== 0 ? (t.pnl > 0 ? '+' : '') + `$${formatPrice(t.pnl)}` : '-';
         
         let sideColor = 'text-white';
         const sideLower = t.side.toLowerCase();
@@ -628,10 +639,10 @@
                 </div>
                 <div class="grid grid-cols-2 gap-y-1 text-xs opacity-80">
                     <div class="col-span-2 flex justify-between"><span class="opacity-40">Time</span> <span>${dateStr}</span></div>
-                    <div class="flex justify-between mr-2"><span class="opacity-40">Price</span> <span>$${t.price.toFixed(2)}</span></div>
+                    <div class="flex justify-between mr-2"><span class="opacity-40">Price</span> <span>$${formatPrice(t.price)}</span></div>
                     <div class="flex justify-between"><span class="opacity-40">Size</span> <span>${t.size.toFixed(2)}</span></div>
-                    <div class="flex justify-between mr-2"><span class="opacity-40">Value</span> <span>$${t.value.toFixed(2)}</span></div>
-                    <div class="flex justify-between"><span class="opacity-40">Fee</span> <span>$${t.fee.toFixed(2)}</span></div>
+                    <div class="flex justify-between mr-2"><span class="opacity-40">Value</span> <span>$${formatPrice(t.value)}</span></div>
+                    <div class="flex justify-between"><span class="opacity-40">Fee</span> <span>$${formatPrice(t.fee)}</span></div>
                 </div>
             </div>
 
@@ -639,10 +650,10 @@
             <div class="hidden md:grid grid-cols-8 gap-4 items-center text-xs">
                 <div class="col-span-2 opacity-60">${dateStr}</div>
                 <div class="col-span-1 font-bold ${sideColor}">${t.side}</div>
-                <div class="col-span-1 text-right font-mono opacity-90">$${t.price.toFixed(2)}</div>
+                <div class="col-span-1 text-right font-mono opacity-90">$${formatPrice(t.price)}</div>
                 <div class="col-span-1 text-right font-mono opacity-90">${t.size.toFixed(2)}</div>
-                <div class="col-span-1 text-right font-mono opacity-60">$${t.value.toFixed(2)}</div>
-                <div class="col-span-1 text-right font-mono opacity-60">$${t.fee.toFixed(2)}</div>
+                <div class="col-span-1 text-right font-mono opacity-60">$${formatPrice(t.value)}</div>
+                <div class="col-span-1 text-right font-mono opacity-60">$${formatPrice(t.fee)}</div>
                 <div class="col-span-1 text-right font-mono font-bold ${pnlClass}">${pnlText}</div>
             </div>
         </div>
@@ -660,14 +671,14 @@
       const price = parseFloat(data.current_price);
       priceEl.innerHTML = `
         <div class="text-xs opacity-70 uppercase tracking-wide">Price</div>
-        <div class="text-xl md:text-2xl font-bold">${price ? `$${price.toFixed(2)}` : 'N/A'}</div>
+        <div class="text-xl md:text-2xl font-bold">${price ? `$${formatPrice(price)}` : 'N/A'}</div>
       `;
 
       // Available Margin
       const margin = parseFloat(data.available_margin);
       marginEl.innerHTML = `
         <div class="text-xs opacity-70 uppercase tracking-wide">Margin</div>
-        <div class="text-xl md:text-2xl font-bold">${margin ? `$${margin.toFixed(2)}` : '$0.00'}</div>
+        <div class="text-xl md:text-2xl font-bold">${margin ? `$${formatPrice(margin)}` : '$0.00'}</div>
       `;
 
       // Open Position
@@ -681,7 +692,7 @@
           <div class="text-base md:text-lg font-bold ${isLong ? 'text-green-400' : 'text-red-400'} leading-tight">
             ${isLong ? 'LONG' : 'SHORT'} ${parseFloat(pos.szi).toFixed(2)}
           </div>
-          <div class="text-[10px] md:text-xs opacity-80 mt-0.5">@$${parseFloat(pos.entryPx).toFixed(2)} • <span class="${pnlColor}">$${pnl.toFixed(2)}</span></div>
+          <div class="text-[10px] md:text-xs opacity-80 mt-0.5">@$${formatPrice(pos.entryPx)} • <span class="${pnlColor}">$${formatPrice(pnl)}</span></div>
         `;
       } else {
         positionEl.innerHTML = `
@@ -707,7 +718,7 @@
           <div class="text-base md:text-lg font-bold ${isBuy ? 'text-green-400' : 'text-red-400'} leading-tight">
             ${sideText} ${parseFloat(order.sz).toFixed(2)}
           </div>
-           <div class="text-[10px] md:text-xs opacity-60 mt-0.5">@$${parseFloat(order.limitPx).toFixed(2)}${data.open_orders.length > 1 ? ` (+${data.open_orders.length - 1})`: ''}</div>
+           <div class="text-[10px] md:text-xs opacity-60 mt-0.5">@$${formatPrice(order.limitPx)}${data.open_orders.length > 1 ? ` (+${data.open_orders.length - 1})`: ''}</div>
         `;
       } else {
         ordersEl.innerHTML = `
@@ -727,9 +738,9 @@
         const pnl = parseFloat(pos.unrealizedPnl);
         
         if (overlayEl) overlayEl.classList.remove('hidden');
-        if (liqEl) liqEl.textContent = liq ? `$${liq.toFixed(2)}` : 'N/A';
+        if (liqEl) liqEl.textContent = liq ? `$${formatPrice(liq)}` : 'N/A';
         if (pnlEl) {
-            pnlEl.textContent = (pnl >= 0 ? '+' : '') + `$${pnl.toFixed(2)}`;
+            pnlEl.textContent = (pnl >= 0 ? '+' : '') + `$${formatPrice(pnl)}`;
             pnlEl.className = `font-mono font-bold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`;
         }
       } else {
@@ -835,7 +846,7 @@
         // Label
         ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
         ctx.textAlign = "left";
-        ctx.fillText(p.toFixed(2), w - padRight + 5, y + 3);
+        ctx.fillText(formatPrice(p), w - padRight + 5, y + 3);
       }
 
       // X-Axis (Time) - 6 ticks
@@ -905,7 +916,7 @@
       // Label Highlight
       ctx.fillStyle = "#fbbf24";
       ctx.textAlign = "left";
-      ctx.fillText(last.close.toFixed(2), w - padRight + 5, yLast + 3);
+      ctx.fillText(formatPrice(last.close), w - padRight + 5, yLast + 3);
 
       // Update Header Label
       const labelEl = document.getElementById("mini-chart-label");
@@ -914,7 +925,7 @@
         const current = last.close;
         const pct = ((current - first) / first) * 100;
         const colorClass = pct >= 0 ? "text-green-400" : "text-red-400";
-        labelEl.innerHTML = `${pair} <span class="${colorClass}">${current.toFixed(2)} (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)</span>`;
+        labelEl.innerHTML = `${pair} <span class="${colorClass}">${formatPrice(current)} (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)</span>`;
       }
     }
     
