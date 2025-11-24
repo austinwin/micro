@@ -31,11 +31,11 @@
     }
 
     /* Modal Styles */
-    #api-key-modal {
+    #api-key-modal, #ai-response-modal {
       transition: opacity 0.5s ease-in-out;
       opacity: 0;
     }
-    #api-key-modal.show {
+    #api-key-modal.show, #ai-response-modal.show {
       opacity: 1;
     }
     
@@ -72,6 +72,36 @@
       <button onclick="saveApiKey()" class="w-full py-3 btn-primary rounded-xl font-bold bg-violet-600 hover:bg-violet-700">
         Connect
       </button>
+    </div>
+  </div>
+
+  <!-- AI Response Modal -->
+  <div id="ai-response-modal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center hidden" onclick="closeAiModal(event)">
+    <div class="glass p-6 rounded-2xl max-w-md w-full mx-4 shadow-2xl border border-violet-500/30 relative" onclick="event.stopPropagation()">
+      <button onclick="closeAiModal()" class="absolute top-4 right-4 text-white/50 hover:text-white">
+        <i class="fas fa-times"></i>
+      </button>
+      <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <i class="fas fa-brain text-violet-400"></i> AI Analysis
+      </h2>
+      <div id="ai-response-content" class="space-y-4">
+        <!-- Content injected via JS -->
+        <div class="animate-pulse flex space-x-4">
+            <div class="flex-1 space-y-4 py-1">
+                <div class="h-4 bg-white/10 rounded w-3/4"></div>
+                <div class="space-y-2">
+                    <div class="h-4 bg-white/10 rounded"></div>
+                    <div class="h-4 bg-white/10 rounded w-5/6"></div>
+                </div>
+            </div>
+        </div>
+      </div>
+      <div class="mt-6 flex gap-3">
+        <button onclick="closeAiModal()" class="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">Close</button>
+        <button onclick="executeTradeFromModal()" id="btn-modal-trade" class="flex-1 py-2 rounded-lg btn-primary font-bold bg-violet-600 hover:bg-violet-700 hidden">
+            Execute Trade
+        </button>
+      </div>
     </div>
   </div>
 
@@ -178,9 +208,14 @@
             <button id="btn-long" onclick="executeTrade('LONG')" class="flex-1 py-3 btn-primary rounded-xl font-semibold text-base bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 flex items-center justify-center gap-2">
               <i class="fas fa-arrow-up"></i><span>Long</span>
             </button>
-            <button id="btn-ai" onclick="executeAITrade()" class="flex-1 py-3 btn-primary rounded-xl font-semibold text-base bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 flex items-center justify-center gap-2">
-              <i class="fas fa-robot"></i><span>AI</span>
-            </button>
+            <div class="flex flex-col gap-1 flex-1">
+                <button id="btn-ai" onclick="executeAITrade()" class="w-full py-1.5 btn-primary rounded-t-xl font-semibold text-sm bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 flex items-center justify-center gap-2">
+                  <i class="fas fa-robot"></i><span>Trade AI</span>
+                </button>
+                <button id="btn-ask-ai" onclick="askAi()" class="w-full py-1.5 btn-primary rounded-b-xl font-semibold text-sm bg-white/10 hover:bg-white/20 border border-white/5 flex items-center justify-center gap-2">
+                  <i class="fas fa-comment-dots text-violet-300"></i><span>Ask AI</span>
+                </button>
+            </div>
             <button id="btn-short" onclick="executeTrade('SHORT')" class="flex-1 py-3 btn-primary rounded-xl font-semibold text-base bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 flex items-center justify-center gap-2">
               <i class="fas fa-arrow-down"></i><span>Short</span>
             </button>
@@ -361,6 +396,7 @@
     let lastFetchedTrades = [];
     let currentHistoryRange = 24;
     let currentTab = 'trades';
+    let lastAiSignal = null; // Store last AI signal for modal execution
 
     // --- Tab Logic ---
     function switchTab(tab) {
@@ -598,6 +634,109 @@
         setLoading(false);
         btn.innerHTML = originalContent;
       }
+    }
+
+    async function askAi() {
+        const btn = document.getElementById('btn-ask-ai');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = `<i class="fas fa-circle-notch spin"></i>`;
+        setLoading(true);
+        
+        const modal = document.getElementById('ai-response-modal');
+        const content = document.getElementById('ai-response-content');
+        const tradeBtn = document.getElementById('btn-modal-trade');
+        
+        // Reset modal content
+        content.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-8 gap-4">
+                <i class="fas fa-circle-notch spin text-3xl text-violet-400"></i>
+                <p class="opacity-60 animate-pulse">Analyzing market structure...</p>
+            </div>
+        `;
+        tradeBtn.classList.add('hidden');
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.add('show'), 10);
+
+        const pair = document.getElementById("pair").value;
+
+        try {
+            const res = await axios.post(`${getApiBase()}/ask_ai`, { pair });
+            const aiData = res.data.ai_response;
+            lastAiSignal = aiData; // Store for potential execution
+
+            const direction = aiData.signal;
+            const isLong = direction === 'LONG';
+            const colorClass = isLong ? 'text-green-400' : (direction === 'SHORT' ? 'text-red-400' : 'text-white');
+            
+            content.innerHTML = `
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div>
+                        <div class="text-xs opacity-50 uppercase tracking-wide">Signal</div>
+                        <div class="text-2xl font-bold ${colorClass}">${direction}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs opacity-50 uppercase tracking-wide">Confidence</div>
+                        <div class="text-xl font-bold">${aiData.confidence}</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <div class="text-xs opacity-50 uppercase tracking-wide mb-1">Rationale</div>
+                    <p class="text-sm italic opacity-90 leading-relaxed">"${aiData.rationale || aiData.rationale_short}"</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/5 rounded-lg p-3 border border-white/10">
+                        <div class="text-[10px] opacity-50 uppercase tracking-wide">Key Level</div>
+                        <div class="font-mono font-bold">${aiData.key_level || 'N/A'}</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-3 border border-white/10">
+                        <div class="text-[10px] opacity-50 uppercase tracking-wide">Timeframe</div>
+                        <div class="font-mono font-bold">${aiData.timeframe_bias || 'N/A'}</div>
+                    </div>
+                </div>
+            `;
+            
+            // Show trade button if valid signal
+            if (direction === 'LONG' || direction === 'SHORT') {
+                tradeBtn.textContent = `Execute ${direction}`;
+                tradeBtn.onclick = () => executeTradeFromModal(direction);
+                tradeBtn.className = `flex-1 py-2 rounded-lg btn-primary font-bold text-white ${isLong ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`;
+                tradeBtn.classList.remove('hidden');
+            }
+
+        } catch (err) {
+            const errorMessage = err.response?.data?.detail || err.message;
+            content.innerHTML = `
+                <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-center">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-2"></i>
+                    <p class="text-red-200">Analysis Failed</p>
+                    <p class="text-xs opacity-60 mt-1">${errorMessage}</p>
+                </div>
+            `;
+        } finally {
+            setLoading(false);
+            btn.innerHTML = originalContent;
+        }
+    }
+
+    function closeAiModal(event) {
+        if (event && event.target !== event.currentTarget) return; // Only close if clicking backdrop or close button
+        
+        const modal = document.getElementById('ai-response-modal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 500);
+    }
+
+    function executeTradeFromModal(direction) {
+        closeAiModal();
+        // Small delay to allow modal close animation
+        setTimeout(() => {
+            executeTrade(direction);
+        }, 300);
     }
 
     async function cancelOpenOrders() {
