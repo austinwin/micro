@@ -449,7 +449,7 @@
             
             const confidence = signal.confidence || 'N/A';
             const rationale = signal.rationale_short || 'No rationale provided.';
-            const score = signal.score !== undefined ? signal.score.toFixed(2) : 'N/A';
+            const strategy = signal.strategy !== undefined ? signal.strategy: 'None';
             const timeframe = signal.timeframe_bias || 'N/A';
 
             return `
@@ -471,7 +471,7 @@
                         Conf: <span class="font-bold text-white">${confidence}</span>
                     </div>
                     <div class="px-2 py-1 rounded bg-black/20 border border-white/5">
-                        Score: <span class="font-bold text-white">${score}</span>
+                        Strategy: <span class="font-bold text-white">${strategy}</span>
                     </div>
                     <div class="px-2 py-1 rounded bg-black/20 border border-white/5">
                         TF: <span class="font-bold text-white">${timeframe}</span>
