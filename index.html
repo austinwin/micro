@@ -603,27 +603,27 @@
             }
 
             const isCounter = bot.counter_trade === true;
-            const modeLabel = isCounter ? "Counter" : "Normal";
-            const modeClass = isCounter 
-                ? "text-amber-400 border-amber-500/30 bg-amber-500/10" 
-                : "text-blue-300 border-blue-500/30 bg-blue-500/10";
+            // Only show badge if Counter trade is active
+            const counterBadge = isCounter 
+                ? `<span class="ml-2 text-[8px] font-bold text-amber-400 bg-amber-400/10 px-1.5 py-px rounded border border-amber-400/20 tracking-wider">COUNTER</span>` 
+                : ``;
 
             return `
             <div class="glass rounded-xl p-4 border ${statusBg} relative overflow-hidden group transition-all hover:scale-[1.02] cursor-pointer" onclick="selectPair('${bot.pair}')">
                 <div class="flex justify-between items-start mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
                             <i class="fas ${icon} ${statusColor}"></i>
                         </div>
-                        <div>
-                            <div class="font-bold text-base">${bot.pair}</div>
-                            <div class="flex items-center gap-2 mt-0.5">
-                                <div class="text-[10px] opacity-60 uppercase tracking-wider">${bot.persona_set.replace(/_/g, ' ')}</div>
-                                <div class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide border ${modeClass}">${modeLabel}</div>
+                        <div class="min-w-0">
+                            <div class="font-bold text-base truncate">${bot.pair}</div>
+                            <div class="flex items-center mt-0.5">
+                                <div class="text-[10px] opacity-60 uppercase tracking-wider truncate">${bot.persona_set.replace(/_/g, ' ')}</div>
+                                ${counterBadge}
                             </div>
                         </div>
                     </div>
-                    <div class="px-2 py-1 rounded bg-black/20 border border-white/5 text-[10px] font-bold uppercase tracking-wide ${statusColor}">
+                    <div class="px-2 py-1 rounded bg-black/20 border border-white/5 text-[10px] font-bold uppercase tracking-wide ${statusColor} whitespace-nowrap flex-shrink-0 ml-2">
                         ${bot.status_text}
                     </div>
                 </div>
