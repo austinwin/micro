@@ -542,7 +542,8 @@
                 
                 <div class="mb-3">
                     <p class="text-xs opacity-90 leading-relaxed italic">"${rationale}"</p>
-                    <p class="text-xs opacity-90 leading-relaxed italic">"${described_personals|| 'No persona description provided.'}"</p>
+                    <p class="text-xs opacity-90 leading-relaxed">Personal: ${described_personals|| 'No persona description provided.'}</p>
+                    <p class="text-xs opacity-90 leading-relaxed">Strategy: ${strategy|| 'No strategy provided.'}</p>
                 </div>
                 
                 <div class="flex flex-wrap gap-2 text-[10px] uppercase tracking-wide opacity-70">
@@ -551,9 +552,6 @@
                     </div>
                     <div class="px-2 py-1 rounded bg-black/20 border border-white/5">
                         Conf: <span class="font-bold text-white">${confidence}</span>
-                    </div>
-                    <div class="px-2 py-1 rounded bg-black/20 border border-white/5">
-                        Strategy: <span class="font-bold text-white">${strategy}</span>
                     </div>
                     <div class="px-2 py-1 rounded bg-black/20 border border-white/5">
                         TF: <span class="font-bold text-white">${timeframe}</span>
