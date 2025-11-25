@@ -792,10 +792,14 @@
       btn.innerHTML = `<i class="fas fa-circle-notch spin"></i>`;
       setLoading(true);
 
+      const pair = document.getElementById("pair").value;
+      const currentPersona = personaPreferences[pair] || "concise";
+
       const payload = {
-        pair: document.getElementById("pair").value,
+        pair: pair,
         leverage: parseFloat(document.getElementById("leverage").value),
-        trade_size_usd: parseFloat(document.getElementById("size_usd").value) * parseFloat(document.getElementById("leverage").value)
+        trade_size_usd: parseFloat(document.getElementById("size_usd").value) * parseFloat(document.getElementById("leverage").value),
+        persona_set: currentPersona
       };
       
       showToast("AI Analyzing market...", false);
@@ -851,9 +855,10 @@
         setTimeout(() => modal.classList.add('show'), 10);
 
         const pair = document.getElementById("pair").value;
+        const currentPersona = personaPreferences[pair] || "concise";
 
         try {
-            const res = await axios.post(`${getApiBase()}/ask_ai`, { pair });
+            const res = await axios.post(`${getApiBase()}/ask_ai`, { pair, persona_set: currentPersona });
             const aiData = res.data.ai_response;
             lastAiSignal = aiData; // Store for potential execution
 
