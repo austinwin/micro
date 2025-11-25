@@ -468,6 +468,9 @@
     let currentHistoryRange = 24;
     let currentTab = 'trades';
     let lastAiSignal = null; // Store last AI signal for modal execution
+    
+    // Store persona preferences per pair locally
+    let personaPreferences = {}; 
 
     // --- Tab Logic ---
     function switchTab(tab) {
@@ -1289,6 +1292,7 @@
       fetchStatus();
       fetchMiniChart();
       fetchHistory();
+      fetchBotStatus();
     });
 
     // Live clock & status refresh
@@ -1324,9 +1328,20 @@
 
     async function fetchBotStatus() {
         try {
-            const res = await axios.get(`${getApiBase()}/bot/status`);
+            const pair = document.getElementById("pair").value;
+            const res = await axios.get(`${getApiBase()}/bot/status?pair=${pair}`);
             const data = res.data;
             isBotRunning = data.running;
+            
+            // If bot is running, sync the persona preference with what's actually running
+            if (data.running && data.persona_set) {
+                personaPreferences[pair] = data.persona_set;
+            }
+            
+            // Update badge based on preference or running state
+            const currentPersona = personaPreferences[pair] || "concise";
+            updatePersonaBadge(currentPersona);
+            
             updateBotUI(data);
         } catch (err) {
             console.error("Failed to fetch bot status", err);
@@ -1375,20 +1390,24 @@
         btn.innerHTML = `<i class="fas fa-circle-notch spin"></i>`;
         btn.disabled = true;
 
+        const pair = document.getElementById("pair").value;
         const action = isBotRunning ? "stop" : "start";
+        const currentPersona = personaPreferences[pair] || "concise";
         
         const payload = {
             action: action,
-            pair: document.getElementById("pair").value,
+            pair: pair,
             leverage: parseInt(document.getElementById("leverage").value),
+           
             trade_size_usd: parseFloat(document.getElementById("size_usd").value) * parseFloat(document.getElementById("leverage").value),
-            take_profit: document.getElementById("tp_price").value ? parseFloat(document.getElementById("tp_price").value) : null
+            take_profit: document.getElementById("tp_price").value ? parseFloat(document.getElementById("tp_price").value) : null,
+            persona_set: currentPersona
         };
 
         try {
             const res = await axios.post(`${getApiBase()}/bot/configure`, payload);
             if (res.data.status === "started") {
-                showToast("Auto Bot Started");
+                showToast(`Auto Bot Started (${currentPersona})`);
                 isBotRunning = true;
             } else {
                 showToast("Auto Bot Stopped");
@@ -1407,14 +1426,18 @@
     }
 
     // --- Settings Logic ---
-    let currentPersonaSet = "detailed";
+    // let currentPersonaSet = "detailed"; // Removed global tracking
 
     async function fetchSettings() {
         try {
+            const pair = document.getElementById("pair").value;
             const res = await axios.get(`${getApiBase()}/settings/persona`);
-            currentPersonaSet = res.data.current;
-            renderSettingsOptions(res.data.options, res.data.current);
-            updatePersonaBadge(res.data.current);
+            
+            // Use local preference for current pair, fallback to 'concise'
+            const currentForPair = personaPreferences[pair] || "concise";
+            
+            renderSettingsOptions(res.data.options, currentForPair);
+            updatePersonaBadge(currentForPair);
         } catch (err) {
             console.error("Failed to fetch settings:", err);
         }
@@ -1424,7 +1447,7 @@
         const badge = document.getElementById('persona-badge');
         if(badge) {
             const displayName = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            badge.textContent = "AI Theme: " +displayName;
+            badge.textContent = "AI Theme: " + displayName;
             badge.classList.remove('opacity-0');
         }
     }
@@ -1472,13 +1495,25 @@
         btn.disabled = true;
 
         const selected = document.querySelector('input[name="persona_set"]:checked').value;
+        const pair = document.getElementById("pair").value;
 
         try {
-            await axios.post(`${getApiBase()}/settings/persona`, { persona_set: selected });
-            showToast("Settings saved successfully");
-            closeSettingsModal();
-            currentPersonaSet = selected;
+            // Just update local preference. It will be sent when bot starts.
+            personaPreferences[pair] = selected;
+            
+            // If bot is currently running, we might want to restart it or notify user.
+            // For now, we just update the UI badge. The user must restart bot to apply changes if running.
+            // Or we could auto-restart. Let's keep it simple: update UI.
+            
             updatePersonaBadge(selected);
+            showToast(`Theme set to ${selected} for ${pair}`);
+            closeSettingsModal();
+            
+            // Optional: If bot is running, maybe flash a warning or auto-restart?
+            if (isBotRunning) {
+                 showToast("Restart bot to apply new theme", true);
+            }
+            
         } catch (err) {
             showToast("Failed to save settings", true);
             console.error(err);
