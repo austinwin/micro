@@ -223,6 +223,7 @@
                 <option>SOL/USD</option>
                 <option>BTC/USD</option>
                 <option>ETH/USD</option>
+                <option>XRP/USD</option>
                 <option>HYPE/USD</option>
                 <option>ZEC/USD</option>
                 <option>PUMP/USD</option>
@@ -298,12 +299,15 @@
     <!-- Trade History Section -->
     <div class="mt-6">
       <!-- Tabs Navigation -->
-      <div class="flex items-center gap-6 mb-4 border-b border-white/10">
-        <button onclick="switchTab('trades')" id="tab-btn-trades" class="pb-2 border-b-2 border-violet-500 text-white font-bold flex items-center gap-2 transition-all">
+      <div class="flex items-center gap-6 mb-4 border-b border-white/10 overflow-x-auto">
+        <button onclick="switchTab('trades')" id="tab-btn-trades" class="pb-2 border-b-2 border-violet-500 text-white font-bold flex items-center gap-2 transition-all whitespace-nowrap">
             <i class="fas fa-history text-violet-400"></i> Trade History
         </button>
-        <button onclick="switchTab('ai-logs')" id="tab-btn-ai-logs" class="pb-2 border-b-2 border-transparent text-white/50 hover:text-white font-bold flex items-center gap-2 transition-all">
+        <button onclick="switchTab('ai-logs')" id="tab-btn-ai-logs" class="pb-2 border-b-2 border-transparent text-white/50 hover:text-white font-bold flex items-center gap-2 transition-all whitespace-nowrap">
             <i class="fas fa-brain text-violet-400"></i> AI Logs
+        </button>
+        <button onclick="switchTab('running-bots')" id="tab-btn-running-bots" class="pb-2 border-b-2 border-transparent text-white/50 hover:text-white font-bold flex items-center gap-2 transition-all whitespace-nowrap">
+            <i class="fas fa-robot text-violet-400"></i> Running Bots
         </button>
       </div>
 
@@ -349,6 +353,13 @@
       <div id="tab-content-ai-logs" class="hidden">
         <div id="ai-logs-container" class="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-1">
             <div class="glass rounded-xl p-6 text-center opacity-50">Loading AI logs...</div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Running Bots -->
+      <div id="tab-content-running-bots" class="hidden">
+        <div id="running-bots-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-1">
+            <div class="glass rounded-xl p-6 text-center opacity-50 col-span-full">Loading bots...</div>
         </div>
       </div>
     </div>
@@ -478,22 +489,114 @@
         
         const btnTrades = document.getElementById('tab-btn-trades');
         const btnAi = document.getElementById('tab-btn-ai-logs');
+        const btnBots = document.getElementById('tab-btn-running-bots');
+        
         const contentTrades = document.getElementById('tab-content-trades');
         const contentAi = document.getElementById('tab-content-ai-logs');
+        const contentBots = document.getElementById('tab-content-running-bots');
         
+        // Reset all
+        [btnTrades, btnAi, btnBots].forEach(btn => {
+             if(btn) btn.className = "pb-2 border-b-2 border-transparent text-white/50 hover:text-white font-bold flex items-center gap-2 transition-all whitespace-nowrap";
+        });
+        [contentTrades, contentAi, contentBots].forEach(c => {
+             if(c) c.classList.add('hidden');
+        });
+
+        // Activate selected
         if (tab === 'trades') {
-            btnTrades.className = "pb-2 border-b-2 border-violet-500 text-white font-bold flex items-center gap-2 transition-all";
-            btnAi.className = "pb-2 border-b-2 border-transparent text-white/50 hover:text-white font-bold flex items-center gap-2 transition-all";
+            btnTrades.className = "pb-2 border-b-2 border-violet-500 text-white font-bold flex items-center gap-2 transition-all whitespace-nowrap";
             contentTrades.classList.remove('hidden');
-            contentAi.classList.add('hidden');
             fetchHistory();
-        } else {
-            btnAi.className = "pb-2 border-b-2 border-violet-500 text-white font-bold flex items-center gap-2 transition-all";
-            btnTrades.className = "pb-2 border-b-2 border-transparent text-white/50 hover:text-white font-bold flex items-center gap-2 transition-all";
+        } else if (tab === 'ai-logs') {
+            btnAi.className = "pb-2 border-b-2 border-violet-500 text-white font-bold flex items-center gap-2 transition-all whitespace-nowrap";
             contentAi.classList.remove('hidden');
-            contentTrades.classList.add('hidden');
             fetchAiLogs();
+        } else if (tab === 'running-bots') {
+            btnBots.className = "pb-2 border-b-2 border-violet-500 text-white font-bold flex items-center gap-2 transition-all whitespace-nowrap";
+            contentBots.classList.remove('hidden');
+            fetchRunningBots();
         }
+    }
+
+    async function fetchRunningBots() {
+        try {
+            const res = await axios.get(`${getApiBase()}/bot/list`);
+            renderRunningBots(res.data);
+        } catch (err) {
+            console.error("Failed to fetch bots:", err);
+        }
+    }
+
+    function renderRunningBots(bots) {
+        const container = document.getElementById('running-bots-container');
+        if (!bots || bots.length === 0) {
+            container.innerHTML = '<div class="glass rounded-xl p-6 text-center opacity-50 col-span-full">No bots initialized.</div>';
+            return;
+        }
+        
+        const runningBots = bots.filter(b => b.running);
+        
+        if (runningBots.length === 0) {
+             container.innerHTML = '<div class="glass rounded-xl p-6 text-center opacity-50 col-span-full">No active bots running.</div>';
+             return;
+        }
+
+        container.innerHTML = runningBots.map(bot => {
+            let statusColor = "text-green-400";
+            let statusBg = "bg-green-500/10 border-green-500/20";
+            let icon = "fa-robot";
+            
+            if (bot.status_text.includes("Cooldown")) {
+                statusColor = "text-amber-400";
+                statusBg = "bg-amber-500/10 border-amber-500/20";
+                icon = "fa-hourglass-half";
+            } else if (bot.status_text.includes("Position")) {
+                statusColor = "text-blue-400";
+                statusBg = "bg-blue-500/10 border-blue-500/20";
+                icon = "fa-eye";
+            }
+
+            return `
+            <div class="glass rounded-xl p-4 border ${statusBg} relative overflow-hidden group transition-all hover:scale-[1.02] cursor-pointer" onclick="selectPair('${bot.pair}')">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                            <i class="fas ${icon} ${statusColor}"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-base">${bot.pair}</div>
+                            <div class="text-[10px] opacity-60 uppercase tracking-wider">${bot.persona_set.replace(/_/g, ' ')}</div>
+                        </div>
+                    </div>
+                    <div class="px-2 py-1 rounded bg-black/20 border border-white/5 text-[10px] font-bold uppercase tracking-wide ${statusColor}">
+                        ${bot.status_text}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-white/5 rounded p-2 border border-white/5">
+                        <div class="opacity-50 text-[10px] uppercase">Leverage</div>
+                        <div class="font-mono font-bold">${bot.leverage}x</div>
+                    </div>
+                    <div class="bg-white/5 rounded p-2 border border-white/5">
+                        <div class="opacity-50 text-[10px] uppercase">Size</div>
+                        <div class="font-mono font-bold">$${bot.trade_size_usd}</div>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    function selectPair(pair) {
+        const select = document.getElementById('pair');
+        select.value = pair;
+        // Trigger change event manually
+        const event = new Event('change');
+        select.dispatchEvent(event);
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function fetchAiLogs() {
@@ -1307,6 +1410,8 @@
             fetchHistory();
         } else if (currentTab === 'ai-logs') {
             fetchAiLogs();
+        } else if (currentTab === 'running-bots') {
+            fetchRunningBots();
         }
       }
     }, 5000); // Refresh every 5 seconds
