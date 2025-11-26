@@ -1,4 +1,5 @@
 front end to test our microloop AI enginee!
 Trading bot battle with different prompt and model
-<img width="782" height="739" alt="image" src="https://github.com/user-attachments/assets/b17b66a4-4b6d-4096-9f43-5031d9cf6414" />
+<img width="567" height="701" alt="image" src="https://github.com/user-attachments/assets/acb0e4cf-5a43-4d0f-a33f-b37693e625ab" />
+
 
