@@ -398,19 +398,19 @@
 
       <!-- Tab Content: AI Logs -->
       <div id="tab-content-ai-logs" class="hidden">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-            <div class="flex items-center gap-2">
+        <div class="flex items-center justify-between gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
+            <div class="flex items-center gap-2 flex-shrink-0">
                 <label class="text-[10px] font-bold uppercase tracking-wide opacity-70">Prompt:</label>
                 <select id="ai-log-filter" onchange="filterAiLogs(this.value)" class="bg-white/10 border border-white/10 rounded px-2 py-1 text-xs focus:outline-none focus:border-violet-500">
                     <option value="All">All</option>
                 </select>
             </div>
-            <div class="flex gap-3 text-xs">
-                <div class="px-3 py-1 rounded bg-green-500/10 border border-green-500/20 text-green-400">
-                    Longs: <span id="ai-log-longs" class="font-bold">0</span>
+            <div class="flex gap-2 text-xs flex-shrink-0">
+                <div class="px-2 py-1 rounded bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-bold uppercase">
+                    L: <span id="ai-log-longs">0</span>
                 </div>
-                <div class="px-3 py-1 rounded bg-red-500/10 border border-red-500/20 text-red-400">
-                    Shorts: <span id="ai-log-shorts" class="font-bold">0</span>
+                <div class="px-2 py-1 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase">
+                    S: <span id="ai-log-shorts">0</span>
                 </div>
             </div>
         </div>
@@ -421,7 +421,7 @@
 
       <!-- Tab Content: Running Bots -->
       <div id="tab-content-running-bots" class="hidden">
-        <div id="running-bots-stats" class="flex flex-wrap gap-2 mb-4 text-xs">
+        <div id="running-bots-stats" class="flex items-center gap-4 md:gap-6 overflow-x-auto pb-2 mb-4 border-b border-white/5 no-scrollbar whitespace-nowrap">
              <!-- Stats injected via JS -->
         </div>
         <div id="running-bots-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-1">
@@ -801,32 +801,46 @@
         
         // --- Calculate Stats ---
         const totalRunning = runningBots.length;
-        let totalPnl = 0;
+        let closedPnl = 0;
+        let openPnl = 0;
         let totalLongs = 0;
         let totalShorts = 0;
 
         runningBots.forEach(b => {
-            totalPnl += (b.stats?.pnl || 0);
+            closedPnl += (b.stats?.pnl || 0);
+            if (b.position) {
+                openPnl += (b.position.unrealized_pnl || 0);
+            }
             totalLongs += (b.stats?.longs || 0);
             totalShorts += (b.stats?.shorts || 0);
         });
 
+        const totalProfit = closedPnl + openPnl;
+
         statsContainer.innerHTML = `
-            <div class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2">
-                <span class="opacity-50 uppercase tracking-wider text-[10px]">Active</span>
-                <span class="font-bold text-white">${totalRunning}</span>
+            <div class="flex flex-col">
+                <span class="text-[9px] uppercase tracking-wider opacity-50">Active</span>
+                <span class="font-mono font-bold text-sm text-white">${totalRunning}</span>
             </div>
-            <div class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2">
-                <span class="opacity-50 uppercase tracking-wider text-[10px]">PnL</span>
-                <span class="font-mono font-bold ${totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}">${totalPnl >= 0 ? '+' : ''}$${formatPrice(totalPnl)}</span>
+            <div class="w-px h-6 bg-white/10"></div>
+            <div class="flex flex-col">
+                <span class="text-[9px] uppercase tracking-wider opacity-50">Closed</span>
+                <span class="font-mono font-bold text-sm ${closedPnl >= 0 ? 'text-green-400' : 'text-red-400'}">${closedPnl >= 0 ? '+' : ''}$${formatPrice(closedPnl)}</span>
             </div>
-            <div class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2">
-                <span class="opacity-50 uppercase tracking-wider text-[10px]">Longs</span>
-                <span class="font-bold text-green-400">${totalLongs}</span>
+            <div class="w-px h-6 bg-white/10"></div>
+            <div class="flex flex-col">
+                <span class="text-[9px] uppercase tracking-wider opacity-50">Open</span>
+                <span class="font-mono font-bold text-sm ${openPnl >= 0 ? 'text-green-400' : 'text-red-400'}">${openPnl >= 0 ? '+' : ''}$${formatPrice(openPnl)}</span>
             </div>
-            <div class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2">
-                <span class="opacity-50 uppercase tracking-wider text-[10px]">Shorts</span>
-                <span class="font-bold text-red-400">${totalShorts}</span>
+            <div class="w-px h-6 bg-white/10"></div>
+            <div class="flex flex-col">
+                <span class="text-[9px] uppercase tracking-wider opacity-50">Net Profit</span>
+                <span class="font-mono font-bold text-sm ${totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}">${totalProfit >= 0 ? '+' : ''}$${formatPrice(totalProfit)}</span>
+            </div>
+            <div class="w-px h-6 bg-white/10"></div>
+            <div class="flex flex-col">
+                <span class="text-[9px] uppercase tracking-wider opacity-50">L/S</span>
+                <span class="font-mono font-bold text-sm"><span class="text-green-400">${totalLongs}</span>/<span class="text-red-400">${totalShorts}</span></span>
             </div>
         `;
 
@@ -1311,6 +1325,7 @@
                     <div class="text-xs opacity-50 uppercase tracking-wide mb-1">Rationale and Personals</div>
                     <p class="text-sm italic opacity-90 leading-relaxed">"${aiData.rationale || aiData.rationale_short}"</p>
                     <p class="text-sm italic opacity-90 leading-relaxed">"${aiData.described_personals}"</p>
+                    <p class="text-sm italic opacity-90 leading-relaxed">Strategy: ${aiData.strategy !== undefined ? aiData.strategy: 'None'}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="bg-white/5 rounded-lg p-3 border border-white/10">
