@@ -698,7 +698,7 @@
                     <span>${p.name}</span>
                     <span class="text-[9px] opacity-40 font-normal">Max ${p.max_leverage}x</span>
                 </div>
-                <div class="col-span-3 md:col-span-2 text-right font-mono text-xs truncate">$${formatPrice(p.price)}</div>
+                <div class="col-span-3 md:col-span-2 text-right font-mono text-xs truncate">${formatUSD(p.price)}</div>
                 <div class="col-span-3 md:col-span-2 text-right font-mono text-xs ${changeColor}">${p.change_24h > 0 ? '+' : ''}${p.change_24h.toFixed(2)}%</div>
                 <div class="hidden md:block md:col-span-3 text-right font-mono text-xs opacity-70">${volStr}</div>
                 <div class="col-span-3 md:col-span-2 text-center">
@@ -846,17 +846,17 @@
             <div class="w-px h-6 bg-white/10"></div>
             <div class="flex flex-col items-center">
                 <span class="text-[9px] uppercase tracking-wider opacity-50">Closed</span>
-                <span class="font-mono font-bold text-sm ${closedPnl >= 0 ? 'text-green-400' : 'text-red-400'}">${closedPnl >= 0 ? '+' : ''}$${formatPrice(closedPnl.toFixed(2))}</span>
+                <span class="font-mono font-bold text-sm ${closedPnl >= 0 ? 'text-green-400' : 'text-red-400'}">${formatUSD(closedPnl, true)}</span>
             </div>
             <div class="w-px h-6 bg-white/10"></div>
             <div class="flex flex-col items-center">
                 <span class="text-[9px] uppercase tracking-wider opacity-50">Open</span>
-                <span class="font-mono font-bold text-sm ${openPnl >= 0 ? 'text-green-400' : 'text-red-400'}">${openPnl >= 0 ? '+' : ''}$${formatPrice(openPnl.toFixed(2))}</span>
+                <span class="font-mono font-bold text-sm ${openPnl >= 0 ? 'text-green-400' : 'text-red-400'}">${formatUSD(openPnl, true)}</span>
             </div>
             <div class="w-px h-6 bg-white/10"></div>
             <div class="flex flex-col items-center">
                 <span class="text-[9px] uppercase tracking-wider opacity-50">Net Profit</span>
-                <span class="font-mono font-bold text-sm ${totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}">${totalProfit >= 0 ? '+' : ''}$${formatPrice(totalProfit.toFixed(2))}</span>
+                <span class="font-mono font-bold text-sm ${totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}">${formatUSD(totalProfit, true)}</span>
             </div>
             <div class="w-px h-6 bg-white/10"></div>
             <div class="flex flex-col items-center">
@@ -892,7 +892,7 @@
 
             // TP Display
             const tpDisplay = bot.take_profit 
-                ? `<div class="flex justify-between items-center"><span class="opacity-50 text-[10px] uppercase">TP</span><span class="font-mono text-blue-300">$${formatPrice(bot.take_profit)}</span></div>` 
+                ? `<div class="flex justify-between items-center"><span class="opacity-50 text-[10px] uppercase">TP</span><span class="font-mono text-blue-300">${formatUSD(bot.take_profit)}</span></div>` 
                 : '';
 
             let contentHtml = '';
@@ -904,7 +904,7 @@
                 const dirColor = isLong ? "text-green-400" : "text-red-400";
                 const pnlColor = pos.unrealized_pnl >= 0 ? "text-green-400" : "text-red-400";
                 const roi = pos.roi.toFixed(2) + "%";
-                const pnl = (pos.unrealized_pnl >= 0 ? "+" : "") + "$" + formatPrice(pos.unrealized_pnl);
+                const pnl = formatUSD(pos.unrealized_pnl, true);
                 
                 contentHtml = `
                     <div class="mt-3 pt-3 border-t border-white/5 grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
@@ -918,16 +918,16 @@
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="opacity-50 text-[10px] uppercase">Entry</span>
-                            <span class="font-mono">$${formatPrice(pos.entry_price)}</span>
+                            <span class="font-mono">${formatUSD(pos.entry_price)}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="opacity-50 text-[10px] uppercase">Liq</span>
-                            <span class="font-mono text-orange-400">$${formatPrice(pos.liquidation_price)}</span>
+                            <span class="font-mono text-orange-400">${formatUSD(pos.liquidation_price)}</span>
                         </div>
                         ${tpDisplay}
                         <div class="flex justify-between items-center">
                             <span class="opacity-50 text-[10px] uppercase">Margin</span>
-                            <span class="font-mono">$${formatPrice(pos.margin_used)}</span>
+                            <span class="font-mono">${formatUSD(pos.margin_used)}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="opacity-50 text-[10px] uppercase">PnL</span>
@@ -944,12 +944,12 @@
                         </div>
                         <div class="bg-white/5 rounded p-2 border border-white/5">
                             <div class="opacity-40 text-[10px] uppercase tracking-wide">Size</div>
-                            <div class="font-mono font-bold">$${bot.trade_size_usd}</div>
+                            <div class="font-mono font-bold">${formatUSD(bot.trade_size_usd)}</div>
                         </div>
                         ${bot.take_profit ? `
                         <div class="bg-white/5 rounded p-2 border border-white/5">
                             <div class="opacity-40 text-[10px] uppercase tracking-wide">TP</div>
-                            <div class="font-mono font-bold text-blue-300">$${formatPrice(bot.take_profit)}</div>
+                            <div class="font-mono font-bold text-blue-300">${formatUSD(bot.take_profit)}</div>
                         </div>` : ''}
                     </div>
                 `;
@@ -965,7 +965,7 @@
                     <div class="flex gap-2">
                         <span title="Total Longs">L: <b class="text-white">${bot.stats.longs}</b></span>
                         <span title="Total Shorts">S: <b class="text-white">${bot.stats.shorts}</b></span>
-                        <span title="Realized PnL">PnL: <b class="${bot.stats.pnl >= 0 ? 'text-green-400' : 'text-red-400'}">${bot.stats.pnl >= 0 ? '+' : ''}$${formatPrice(bot.stats.pnl)}</b></span>
+                        <span title="Realized PnL">PnL: <b class="${bot.stats.pnl >= 0 ? 'text-green-400' : 'text-red-400'}">${formatUSD(bot.stats.pnl.toFixed(5), true)}</b></span>
                     </div>
                 </div>
             `;
@@ -1064,12 +1064,12 @@
             ${positions.map(pos => {
                 const isLong = pos.size > 0;
                 const pnlColor = pos.unrealized_pnl >= 0 ? "text-green-400" : "text-red-400";
-                const pnl = (pos.unrealized_pnl >= 0 ? "+" : "") + "$" + formatPrice(pos.unrealized_pnl);
+                const pnl = formatUSD(pos.unrealized_pnl, true);
                 const roiColor = pos.roi >= 0 ? "text-green-400" : "text-red-400";
                 const roi = (pos.roi >= 0 ? "+" : "") + pos.roi.toFixed(2) + "%";
                 const openDate = pos.open_time > 0 ? new Date(pos.open_time) : null;
                 const dateStr = openDate ? openDate.toLocaleString([], {month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit'}) : '-';
-                const tpPrice = pos.tp_price ? `$${formatPrice(pos.tp_price)}` : '-';
+                const tpPrice = pos.tp_price ? `${formatUSD(pos.tp_price)}` : '-';
 
                 return `
                 <div class="glass rounded-xl p-4 border-l-4 ${isLong ? 'border-green-500' : 'border-red-500'} hover:bg-white/5 transition-colors" onclick="selectPair('${pos.pair}')">
@@ -1093,15 +1093,15 @@
                     <div class="grid grid-cols-4 gap-2 text-xs mt-3 pt-3 border-t border-white/5">
                         <div>
                             <div class="opacity-40">Entry</div>
-                            <div class="font-mono">$${formatPrice(pos.entry_price)}</div>
+                            <div class="font-mono">${formatUSD(pos.entry_price)}</div>
                         </div>
                         <div class="text-center">
                             <div class="opacity-40">Margin</div>
-                            <div class="font-mono">$${formatPrice(pos.margin_used)}</div>
+                            <div class="font-mono">${formatUSD(pos.margin_used)}</div>
                         </div>
                         <div class="text-center">
                             <div class="opacity-40">Liq</div>
-                            <div class="font-mono text-orange-400">$${formatPrice(pos.liquidation_price)}</div>
+                            <div class="font-mono text-orange-400">${formatUSD(pos.liquidation_price)}</div>
                         </div>
                         <div class="text-right">
                             <div class="opacity-40">TP</div>
@@ -1142,12 +1142,12 @@
                     ${positions.map(pos => {
                         const isLong = pos.size > 0;
                         const pnlColor = pos.unrealized_pnl >= 0 ? "text-green-400" : "text-red-400";
-                        const pnl = (pos.unrealized_pnl >= 0 ? "+" : "") + "$" + formatPrice(pos.unrealized_pnl);
+                        const pnl = formatUSD(pos.unrealized_pnl, true);
                         const roiColor = pos.roi >= 0 ? "text-green-400" : "text-red-400";
                         const roi = (pos.roi >= 0 ? "+" : "") + pos.roi.toFixed(2) + "%";
                         const openDate = pos.open_time > 0 ? new Date(pos.open_time) : null;
                         const dateStr = openDate ? openDate.toLocaleString([], {month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit'}) : '-';
-                        const tpPrice = pos.tp_price ? `$${formatPrice(pos.tp_price)}` : '<span class="opacity-30">-</span>';
+                        const tpPrice = pos.tp_price ? `${formatUSD(pos.tp_price)}` : '<span class="opacity-30">-</span>';
 
                         return `
                         <tr class="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer" onclick="selectPair('${pos.pair}')">
@@ -1160,10 +1160,10 @@
                                 </div>
                             </td>
                             <td class="p-3 whitespace-nowrap">${dateStr}</td>
-                            <td class="p-3 text-right font-mono">$${formatPrice(pos.entry_price)}</td>
-                            <td class="p-3 text-right font-mono">$${formatPrice(pos.margin_used)}</td>
+                            <td class="p-3 text-right font-mono">${formatUSD(pos.entry_price)}</td>
+                            <td class="p-3 text-right font-mono">${formatUSD(pos.margin_used)}</td>
                             <td class="p-3 text-right font-mono font-bold ${roiColor}">${roi}</td>
-                            <td class="p-3 text-right font-mono text-orange-400">$${formatPrice(pos.liquidation_price)}</td>
+                            <td class="p-3 text-right font-mono text-orange-400">${formatUSD(pos.liquidation_price)}</td>
                             <td class="p-3 text-right font-mono text-blue-300">${tpPrice}</td>
                             <td class="p-3 text-right font-mono font-bold ${pnlColor}">${pnl}</td>
                             <td class="p-3 text-center" onclick="event.stopPropagation()">
@@ -1322,6 +1322,19 @@
       if (absVal < 1) return val.toFixed(6).replace(/\.?0+$/, "");
       if (absVal < 10) return val.toFixed(4).replace(/\.?0+$/, "");
       return val.toFixed(2);
+    }
+
+    function formatUSD(num, showPlus = false) {
+      if (num === null || num === undefined || isNaN(num)) return 'N/A';
+      const val = parseFloat(num);
+      if (val === 0) return '$0.00';
+      
+      const absVal = Math.abs(val);
+      const formatted = formatPrice(absVal);
+      
+      if (val < 0) return `-$${formatted}`;
+      if (showPlus && val > 0) return `+$${formatted}`;
+      return `$${formatted}`;
     }
 
     function formatDuration(ms) {
@@ -1739,15 +1752,15 @@
         statsContainer.innerHTML = `
             <div class="px-2 py-1 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2" title="Realized PnL (${rangeLabel})">
                 <span class="opacity-50 uppercase tracking-wider text-[10px]">${rangeLabel} PnL</span>
-                <span class="font-mono font-bold ${pnlRange >= 0 ? 'text-green-400' : 'text-red-400'}">${pnlRange >= 0 ? '+' : ''}$${formatPrice(pnlRange)}</span>
+                <span class="font-mono font-bold ${pnlRange >= 0 ? 'text-green-400' : 'text-red-400'}">${formatUSD(pnlRange, true)}</span>
             </div>
             <div class="px-2 py-1 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2" title="Total Fees (${rangeLabel})">
                 <span class="opacity-50 uppercase tracking-wider text-[10px]">Fees</span>
-                <span class="font-mono font-bold text-orange-300">$${formatPrice(feesRange)}</span>
+                <span class="font-mono font-bold text-orange-300">${formatUSD(feesRange)}</span>
             </div>
             <div class="px-2 py-1 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2" title="Net PnL after Fees (${rangeLabel})">
                 <span class="opacity-50 uppercase tracking-wider text-[10px]">Net</span>
-                <span class="font-mono font-bold ${netPnlRange >= 0 ? 'text-green-400' : 'text-red-400'}">${netPnlRange >= 0 ? '+' : ''}$${formatPrice(netPnlRange)}</span>
+                <span class="font-mono font-bold ${netPnlRange >= 0 ? 'text-green-400' : 'text-red-400'}">${formatUSD(netPnlRange, true)}</span>
             </div>
             <div class="px-2 py-1 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2" title="Longs Opened (${rangeLabel})">
                 <span class="opacity-50 uppercase tracking-wider text-[10px]">Longs</span>
@@ -1764,7 +1777,7 @@
         const isProfit = t.pnl > 0;
         const isLoss = t.pnl < 0;
         const pnlClass = isProfit ? 'text-green-400' : (isLoss ? 'text-red-400' : 'opacity-50');
-        const pnlText = t.pnl !== 0 ? (t.pnl > 0 ? '+' : '') + `$${formatPrice(t.pnl)}` : '-';
+        const pnlText = t.pnl !== 0 ? formatUSD(t.pnl, true) : '-';
         
         let sideColor = 'text-white';
         const sideLower = t.side.toLowerCase();
@@ -1787,10 +1800,10 @@
                 </div>
                 <div class="grid grid-cols-2 gap-y-1 text-xs opacity-80">
                     <div class="col-span-2 flex justify-between"><span class="opacity-40">Time</span> <span>${dateStr}</span></div>
-                    <div class="flex justify-between mr-2"><span class="opacity-40">Price</span> <span>$${formatPrice(t.price)}</span></div>
+                    <div class="flex justify-between mr-2"><span class="opacity-40">Price</span> <span>${formatUSD(t.price)}</span></div>
                     <div class="flex justify-between"><span class="opacity-40">Size</span> <span>${t.size.toFixed(2)}</span></div>
-                    <div class="flex justify-between mr-2"><span class="opacity-40">Value</span> <span>$${formatPrice(t.value)}</span></div>
-                    <div class="flex justify-between"><span class="opacity-40">Fee</span> <span>$${formatPrice(t.fee)}</span></div>
+                    <div class="flex justify-between mr-2"><span class="opacity-40">Value</span> <span>${formatUSD(t.value)}</span></div>
+                    <div class="flex justify-between"><span class="opacity-40">Fee</span> <span>${formatUSD(t.fee)}</span></div>
                 </div>
             </div>
 
@@ -1798,10 +1811,10 @@
             <div class="hidden md:grid grid-cols-8 gap-4 items-center text-xs">
                 <div class="col-span-2 opacity-60">${dateStr}</div>
                 <div class="col-span-1 font-bold ${sideColor}">${t.side}</div>
-                <div class="col-span-1 text-right font-mono opacity-90">$${formatPrice(t.price)}</div>
+                <div class="col-span-1 text-right font-mono opacity-90">${formatUSD(t.price)}</div>
                 <div class="col-span-1 text-right font-mono opacity-90">${t.size.toFixed(2)}</div>
-                <div class="col-span-1 text-right font-mono opacity-60">$${formatPrice(t.value)}</div>
-                <div class="col-span-1 text-right font-mono opacity-60">$${formatPrice(t.fee)}</div>
+                <div class="col-span-1 text-right font-mono opacity-60">${formatUSD(t.value)}</div>
+                <div class="col-span-1 text-right font-mono opacity-60">${formatUSD(t.fee)}</div>
                 <div class="col-span-1 text-right font-mono font-bold ${pnlClass}">${pnlText}</div>
             </div>
         </div>
@@ -1838,14 +1851,14 @@
       const price = parseFloat(data.current_price);
       priceEl.innerHTML = `
         <div class="text-xs opacity-70 uppercase tracking-wide"> ${pair ? `${pair} Price` : "Price"}</div>
-        <div class="text-xl md:text-2xl font-bold">${price ? `$${formatPrice(price)}` : 'N/A'}</div>
+        <div class="text-xl md:text-2xl font-bold">${price ? formatUSD(price) : 'N/A'}</div>
       `;
 
       // Available Margin
       const margin = parseFloat(data.available_margin);
       marginEl.innerHTML = `
         <div class="text-xs opacity-70 uppercase tracking-wide">Margin</div>
-        <div class="text-xl md:text-2xl font-bold">${margin ? `$${formatPrice(margin)}` : '$0.00'}</div>
+        <div class="text-xl md:text-2xl font-bold">${margin ? formatUSD(margin) : '$0.00'}</div>
       `;
 
       // Open Position
@@ -1859,7 +1872,7 @@
           <div class="text-base md:text-lg font-bold ${isLong ? 'text-green-400' : 'text-red-400'} leading-tight">
             ${isLong ? 'LONG' : 'SHORT'} ${parseFloat(pos.szi).toFixed(2)}
           </div>
-          <div class="text-[10px] md:text-xs opacity-80 mt-0.5">@$${formatPrice(pos.entryPx)} • <span class="${pnlColor}">$${formatPrice(pnl)}</span></div>
+          <div class="text-[10px] md:text-xs opacity-80 mt-0.5">@${formatUSD(pos.entryPx)} • <span class="${pnlColor}">${formatUSD(pnl)}</span></div>
         `;
       } else {
         positionEl.innerHTML = `
@@ -1885,7 +1898,7 @@
           <div class="text-base md:text-lg font-bold ${isBuy ? 'text-green-400' : 'text-red-400'} leading-tight">
             ${sideText} ${parseFloat(order.sz).toFixed(2)}
           </div>
-           <div class="text-[10px] md:text-xs opacity-60 mt-0.5">@$${formatPrice(order.limitPx)}${data.open_orders.length > 1 ? ` (+${data.open_orders.length - 1})`: ''}</div>
+           <div class="text-[10px] md:text-xs opacity-60 mt-0.5">@${formatUSD(order.limitPx)}${data.open_orders.length > 1 ? ` (+${data.open_orders.length - 1})`: ''}</div>
         `;
       } else {
         ordersEl.innerHTML = `
@@ -1905,9 +1918,9 @@
         const pnl = parseFloat(pos.unrealizedPnl);
         
         if (overlayEl) overlayEl.classList.remove('hidden');
-        if (liqEl) liqEl.textContent = liq ? `$${formatPrice(liq)}` : 'N/A';
+        if (liqEl) liqEl.textContent = liq ? formatUSD(liq) : 'N/A';
         if (pnlEl) {
-            pnlEl.textContent = (pnl >= 0 ? '+' : '') + `$${formatPrice(pnl)}`;
+            pnlEl.textContent = formatUSD(pnl, true);
             pnlEl.className = `font-mono font-bold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`;
         }
       } else {
