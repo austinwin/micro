@@ -3054,7 +3054,7 @@
               responsive: true,
               maintainAspectRatio: false,
               layout: {
-                  padding: { right: 50 } // Space for labels
+                  padding: { right: 45, left: 0, top: 10, bottom: 0 }
               },
               interaction: {
                   mode: 'index',
@@ -3092,15 +3092,18 @@
                           tooltipFormat: 'MMM d h:mm a'
                       },
                       grid: {
-                          color: 'rgba(255, 255, 255, 0.1)'
+                          color: 'rgba(255, 255, 255, 0.1)',
+                          drawBorder: false,
+                          tickLength: 5
                       },
                       ticks: {
                           color: 'rgba(255, 255, 255, 0.5)',
                           font: { size: 10 },
                           autoSkip: true,
                           maxRotation: 0,
-                          autoSkipPadding: 15, 
-                          minRotation: 0
+                          minRotation: 0,
+                          autoSkipPadding: 20,
+                          maxTicksLimit: 8
                       }
                   },
                   y: {
