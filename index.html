@@ -437,7 +437,7 @@ select option {
                 </div>
 
                 <!-- Switches Row -->
-                <div class="grid grid-cols-3 gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
+                <div class="grid grid-cols-4 gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
                     <!-- Counter Trade Switch -->
                     <div class="flex flex-col items-center gap-1.5 cursor-pointer group p-1 rounded transition-colors" onclick="toggleCounterTrade()" title="Counter Trade Mode">
                         <div id="counter-trade-switch" class="w-9 h-5 rounded-full bg-white/10 relative transition-colors border border-white/10 hover:bg-white/5">
@@ -460,6 +460,14 @@ select option {
                             <div id="autoconfig-knob" class="absolute left-0.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white/40 transition-all shadow-sm"></div>
                         </div>
                         <span class="text-[9px] uppercase font-bold opacity-40 transition-colors" id="autoconfig-label">Auto Config</span>
+                    </div>
+
+                    <!-- Dynamic TP Switch -->
+                    <div class="flex flex-col items-center gap-1.5 cursor-pointer group p-1 rounded transition-colors" onclick="toggleDynamicTp()" title="Dynamic TP Mode">
+                        <div id="dynamictp-switch" class="w-9 h-5 rounded-full bg-white/10 relative transition-colors border border-white/10 hover:bg-white/5">
+                            <div id="dynamictp-knob" class="absolute left-0.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white/40 transition-all shadow-sm"></div>
+                        </div>
+                        <span class="text-[9px] uppercase font-bold opacity-40 transition-colors" id="dynamictp-label">Dyn TP</span>
                     </div>
                 </div>
              </div>
@@ -788,6 +796,7 @@ select option {
     let counterTradeActive = false; // New state
     let aiFlipActive = false; // New state for AI Flip
     let autoConfigActive = false; // New state for Auto Config
+    let dynamicTpActive = false; // New state for Dynamic TP
     
     // Debounce utility
     function debounce(func, wait) {
@@ -1050,6 +1059,40 @@ select option {
         }
     }
 
+    // --- Dynamic TP Logic ---
+    function toggleDynamicTp() {
+        dynamicTpActive = !dynamicTpActive;
+        updateDynamicTpUI();
+    }
+
+    function updateDynamicTpUI() {
+        const switchEl = document.getElementById('dynamictp-switch');
+        const knob = document.getElementById('dynamictp-knob');
+        const label = document.getElementById('dynamictp-label');
+        
+        if (dynamicTpActive) {
+            switchEl.classList.remove('bg-white/10', 'border-white/10');
+            switchEl.classList.add('bg-cyan-500/20', 'border-cyan-500/50');
+            
+            knob.classList.add('translate-x-4');
+            knob.classList.remove('bg-white/40');
+            knob.classList.add('bg-cyan-400');
+            
+            label.classList.remove('opacity-40');
+            label.classList.add('text-cyan-400', 'opacity-100');
+        } else {
+            switchEl.classList.add('bg-white/10', 'border-white/10');
+            switchEl.classList.remove('bg-cyan-500/20', 'border-cyan-500/50');
+            
+            knob.classList.remove('translate-x-4');
+            knob.classList.add('bg-white/40');
+            knob.classList.remove('bg-cyan-400');
+            
+            label.classList.add('opacity-40');
+            label.classList.remove('text-cyan-400', 'opacity-100');
+        }
+    }
+
     // --- Tab Logic ---
     async function switchTab(tab) {
         const wrapper = document.getElementById('tab-content-wrapper');
@@ -1222,6 +1265,11 @@ select option {
             const tpDisplay = bot.take_profit 
                 ? `<div class="flex justify-between items-center"><span class="opacity-50 text-[10px] uppercase">TP</span><span class="font-mono text-blue-300">${formatUSD(bot.take_profit)}</span></div>` 
                 : '';
+            
+            const isDynTp = bot.dynamic_tp === true;
+            const dynTpBadge = isDynTp
+                ? `<span class="ml-1 text-[8px] font-bold text-cyan-400 bg-cyan-400/10 px-1.5 py-px rounded border border-cyan-400/20 tracking-wider">DYN</span>`
+                : ``;
 
             let contentHtml = '';
             
@@ -1315,6 +1363,7 @@ select option {
                                 <div class="text-[10px] opacity-60 uppercase tracking-wider truncate">${bot.persona_set.replace(/_/g, ' ')}</div>
                                 ${counterBadge}
                                 ${aiFlipBadge}
+                                ${dynTpBadge}
                             </div>
                         </div>
                     </div>
@@ -1388,6 +1437,10 @@ select option {
                 <div class="flex justify-between border-b border-white/5 pb-1">
                     <span class="opacity-60">Auto Config</span>
                     <span class="font-mono ${bot.auto_config ? 'text-purple-400' : ''}">${bot.auto_config}</span>
+                </div>
+                <div class="flex justify-between border-b border-white/5 pb-1">
+                    <span class="opacity-60">Dynamic TP</span>
+                    <span class="font-mono ${bot.dynamic_tp ? 'text-cyan-400' : ''}">${bot.dynamic_tp}</span>
                 </div>
             </div>
 
@@ -2101,59 +2154,6 @@ select option {
       const pair = targetPair || document.getElementById("pair").value;
       try {
         const res = await axios.post(`${getApiBase()}/close_position`, { pair });
-        showToast(res.data.message || "Position close submitted");
-        
-        // Optimistic Update only if current pair
-        if (!targetPair || targetPair === document.getElementById("pair").value) {
-            const statusEl = document.getElementById('status-open-position');
-            if (statusEl) {
-                statusEl.innerHTML = `
-                <div class="text-xs opacity-70 uppercase tracking-wide">Position</div>
-                <div class="text-xl md:text-2xl font-bold opacity-50">Closing...</div>
-                `;
-            }
-            fetchStatus();
-        }
-
-        // Parallel fetch
-        Promise.all([
-            new Promise(resolve => setTimeout(async () => {
-                if (!targetPair || targetPair === document.getElementById("pair").value) await fetchHistory();
-                if (currentTab === 'positions') await fetchOpenPositions();
-                resolve();
-            }, 1000))
-        ]);
-        
-      } catch (err) {
-        const errorMessage = err.response?.data?.detail || err.message;
-        showToast(`Close position failed: ${errorMessage}`, true);
-      } finally {
-        setLoading(false);
-        if(btn) {
-            btn.innerHTML = originalContent;
-        }
-      }
-    }
-
-    async function updateTP() {
-      const btn = document.getElementById('btn-update-tp');
-      const originalContent = btn.innerHTML;
-      btn.innerHTML = `<i class="fas fa-circle-notch spin"></i>`;
-      setLoading(true);
-
-      const pair = document.getElementById("pair").value;
-      const price = parseFloat(document.getElementById("tp_price").value);
-
-      if (!price || isNaN(price)) {
-        showToast("Please enter a valid TP price", true);
-        setLoading(false);
-        btn.innerHTML = originalContent;
-        return;
-      }
-
-      try {
-        const res = await axios.post(`${getApiBase()}/update_tp`, { pair, price });
-        showToast("TP Updated Successfully");
         fetchStatus();
       } catch (err) {
         const errorMessage = err.response?.data?.detail || err.message;
