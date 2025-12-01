@@ -59,7 +59,26 @@
     #battle-modal.show {
       opacity: 1;
     }
+/* Custom dropdown styling for dark theme */
+select {
+  background: rgba(255,255,255,0.08);
+  border: 2px solid #a78bfa; /* violet-400 */
+  color: #f3f4f6;
+  border-radius: 1rem;
+  font-weight: bold;
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.25);
+  transition: border-color 0.2s;
+}
 
+select:focus {
+  border-color: #8b5cf6; /* violet-500 */
+  outline: none;
+}
+
+select option {
+  color: #18181b;
+  background: #f3f4f6;
+}
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
