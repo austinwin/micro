@@ -2154,6 +2154,59 @@ select option {
       const pair = targetPair || document.getElementById("pair").value;
       try {
         const res = await axios.post(`${getApiBase()}/close_position`, { pair });
+        showToast(res.data.message || "Position close submitted");
+        
+        // Optimistic Update only if current pair
+        if (!targetPair || targetPair === document.getElementById("pair").value) {
+            const statusEl = document.getElementById('status-open-position');
+            if (statusEl) {
+                statusEl.innerHTML = `
+                <div class="text-xs opacity-70 uppercase tracking-wide">Position</div>
+                <div class="text-xl md:text-2xl font-bold opacity-50">Closing...</div>
+                `;
+            }
+            fetchStatus();
+        }
+
+        // Parallel fetch
+        Promise.all([
+            new Promise(resolve => setTimeout(async () => {
+                if (!targetPair || targetPair === document.getElementById("pair").value) await fetchHistory();
+                if (currentTab === 'positions') await fetchOpenPositions();
+                resolve();
+            }, 1000))
+        ]);
+        
+      } catch (err) {
+        const errorMessage = err.response?.data?.detail || err.message;
+        showToast(`Close position failed: ${errorMessage}`, true);
+      } finally {
+        setLoading(false);
+        if(btn) {
+            btn.innerHTML = originalContent;
+        }
+      }
+    }
+
+    async function updateTP() {
+      const btn = document.getElementById('btn-update-tp');
+      const originalContent = btn.innerHTML;
+      btn.innerHTML = `<i class="fas fa-circle-notch spin"></i>`;
+      setLoading(true);
+
+      const pair = document.getElementById("pair").value;
+      const price = parseFloat(document.getElementById("tp_price").value);
+
+      if (!price || isNaN(price)) {
+        showToast("Please enter a valid TP price", true);
+        setLoading(false);
+        btn.innerHTML = originalContent;
+        return;
+      }
+
+      try {
+        const res = await axios.post(`${getApiBase()}/update_tp`, { pair, price });
+        showToast("TP Updated Successfully");
         fetchStatus();
       } catch (err) {
         const errorMessage = err.response?.data?.detail || err.message;
