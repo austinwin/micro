@@ -438,7 +438,7 @@ select option {
                 <div id="market-changes" class="flex justify-between items-center gap-2 text-xs font-mono opacity-80 bg-black/20 p-2 rounded-lg border border-white/5 min-h-[32px]"></div>
 
                 <!-- Switches Row -->
-                <div class="grid grid-cols-4 gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
+                <div class="grid grid-cols-5 gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
                     <!-- Counter Trade Switch -->
                     <div class="flex flex-col items-center gap-1.5 cursor-pointer group p-1 rounded transition-colors" onclick="toggleCounterTrade()" title="Counter Trade Mode">
                         <div id="counter-trade-switch" class="w-9 h-5 rounded-full bg-white/10 relative transition-colors border border-white/10 hover:bg-white/5">
@@ -469,6 +469,14 @@ select option {
                             <div id="dynamictp-knob" class="absolute left-0.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white/40 transition-all shadow-sm"></div>
                         </div>
                         <span class="text-[9px] uppercase font-bold opacity-40 transition-colors" id="dynamictp-label">Dyn TP</span>
+                    </div>
+
+                    <!-- Hard Stop Loss Switch -->
+                    <div class="flex flex-col items-center gap-1.5 cursor-pointer group p-1 rounded transition-colors" onclick="toggleHardStopLoss()" title="Hard Stop Loss Mode">
+                        <div id="hardstoploss-switch" class="w-9 h-5 rounded-full bg-white/10 relative transition-colors border border-white/10 hover:bg-white/5">
+                            <div id="hardstoploss-knob" class="absolute left-0.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white/40 transition-all shadow-sm"></div>
+                        </div>
+                        <span class="text-[9px] uppercase font-bold opacity-40 transition-colors" id="hardstoploss-label">Hard SL</span>
                     </div>
                 </div>
              </div>
@@ -833,6 +841,7 @@ select option {
     let aiFlipActive = false; // New state for AI Flip
     let autoConfigActive = false; // New state for Auto Config
     let dynamicTpActive = false; // New state for Dynamic TP
+    let hardStopLossActive = false; // New state for Hard Stop Loss
     
     // Debounce utility
     function debounce(func, wait) {
@@ -1126,6 +1135,40 @@ select option {
             
             label.classList.add('opacity-40');
             label.classList.remove('text-cyan-400', 'opacity-100');
+        }
+    }
+
+    // --- Hard Stop Loss Logic ---
+    function toggleHardStopLoss() {
+        hardStopLossActive = !hardStopLossActive;
+        updateHardStopLossUI();
+    }
+
+    function updateHardStopLossUI() {
+        const switchEl = document.getElementById('hardstoploss-switch');
+        const knob = document.getElementById('hardstoploss-knob');
+        const label = document.getElementById('hardstoploss-label');
+        
+        if (hardStopLossActive) {
+            switchEl.classList.remove('bg-white/10', 'border-white/10');
+            switchEl.classList.add('bg-rose-500/20', 'border-rose-500/50');
+            
+            knob.classList.add('translate-x-4');
+            knob.classList.remove('bg-white/40');
+            knob.classList.add('bg-rose-400');
+            
+            label.classList.remove('opacity-40');
+            label.classList.add('text-rose-400', 'opacity-100');
+        } else {
+            switchEl.classList.add('bg-white/10', 'border-white/10');
+            switchEl.classList.remove('bg-rose-500/20', 'border-rose-500/50');
+            
+            knob.classList.remove('translate-x-4');
+            knob.classList.add('bg-white/40');
+            knob.classList.remove('bg-rose-400');
+            
+            label.classList.add('opacity-40');
+            label.classList.remove('text-rose-400', 'opacity-100');
         }
     }
 
@@ -1426,14 +1469,14 @@ select option {
                 ? `<span class="ml-1 text-[8px] font-bold text-blue-400 bg-blue-400/10 px-1.5 py-px rounded border border-blue-400/20 tracking-wider">FLIP</span>`
                 : ``;
 
-            // TP Display
-            const tpDisplay = bot.take_profit 
-                ? `<div class="flex justify-between items-center"><span class="opacity-50 text-[10px] uppercase">TP</span><span class="font-mono text-blue-300">${formatUSD(bot.take_profit)}</span></div>` 
-                : '';
-            
             const isDynTp = bot.dynamic_tp === true;
             const dynTpBadge = isDynTp
                 ? `<span class="ml-1 text-[8px] font-bold text-cyan-400 bg-cyan-400/10 px-1.5 py-px rounded border border-cyan-400/20 tracking-wider">DYN</span>`
+                : ``;
+
+            const isHardSl = bot.hard_stop_loss === true;
+            const hardSlBadge = isHardSl
+                ? `<span class="ml-1 text-[8px] font-bold text-rose-400 bg-rose-400/10 px-1.5 py-px rounded border border-rose-400/20 tracking-wider">SL</span>`
                 : ``;
 
             let contentHtml = '';
@@ -1529,6 +1572,7 @@ select option {
                                 ${counterBadge}
                                 ${aiFlipBadge}
                                 ${dynTpBadge}
+                                ${hardSlBadge}
                             </div>
                         </div>
                     </div>
@@ -1606,6 +1650,10 @@ select option {
                 <div class="flex justify-between border-b border-white/5 pb-1">
                     <span class="opacity-60">Dynamic TP</span>
                     <span class="font-mono ${bot.dynamic_tp ? 'text-cyan-400' : ''}">${bot.dynamic_tp}</span>
+                </div>
+                <div class="flex justify-between border-b border-white/5 pb-1">
+                    <span class="opacity-60">Hard Stop Loss</span>
+                    <span class="font-mono ${bot.hard_stop_loss ? 'text-rose-400' : ''}">${bot.hard_stop_loss}</span>
                 </div>
             </div>
 
@@ -2856,6 +2904,8 @@ select option {
       updateAutoConfigUI();
       dynamicTpActive = false;
       updateDynamicTpUI();  
+      hardStopLossActive = false;
+      updateHardStopLossUI();
       debouncedRefresh();
     });
 
@@ -2909,6 +2959,10 @@ select option {
                 if (dynamicTpActive !== data.dynamic_tp) {
                     dynamicTpActive = data.dynamic_tp;
                     updateDynamicTpUI();
+                }
+                if (hardStopLossActive !== data.hard_stop_loss) {
+                    hardStopLossActive = data.hard_stop_loss;
+                    updateHardStopLossUI();
                 }
             }else {
                 // Reset defaults if bot is not running
@@ -2995,13 +3049,14 @@ select option {
             counter_trade: counterTradeActive, // Send counter trade flag
             aiflip: aiFlipActive, // Send AI Flip flag
             auto_config: autoConfigActive, // Send Auto Config flag
-            dynamic_tp: dynamicTpActive // Send Dynamic TP flag
+            dynamic_tp: dynamicTpActive, // Send Dynamic TP flag
+            hard_stop_loss: hardStopLossActive // Send Hard Stop Loss flag
           };
 
         try {
             const res = await axios.post(`${getApiBase()}/bot/configure`, payload);
             if (res.data.status === "started") {
-                showToast(`Auto Bot Started (${currentPersona}${counterTradeActive ? ', Against AI' : ''}${aiFlipActive ? ', Support Reversal' : ''}${autoConfigActive ? ', Dync Config' : ''})`);
+                showToast(`Auto Bot Started (${currentPersona}${counterTradeActive ? ', Against AI' : ''}${aiFlipActive ? ', Support Reversal' : ''}${autoConfigActive ? ', Dync Config' : ''}${hardStopLossActive ? ', Hard SL' : ''})`);
                 isBotRunning = true;
             } else {
                 showToast("Auto Bot Stopped");
