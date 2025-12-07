@@ -817,7 +817,17 @@ select option {
             <p class="text-xs opacity-60">Enforces a strict stop loss order on the exchange for safety.</p>
             <span id="hardstoploss-label" class="hidden"></span>
         </div>
-
+        <!-- Recheck TP -->
+        <div>
+            <div class="flex items-center justify-between mb-1 cursor-pointer" onclick="toggleRecheckTp()">
+                <span class="font-bold text-sm text-pink-400">Recheck TP</span>
+                <div id="rechecktp-switch" class="w-9 h-5 rounded-full bg-white/10 relative transition-colors border border-white/10">
+                    <div id="rechecktp-knob" class="absolute left-0.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white/40 transition-all shadow-sm"></div>
+                </div>
+            </div>
+            <p class="text-xs opacity-60">AI re-evaluates trend when in profit to decide whether to close now or wait.</p>
+            <span id="rechecktp-label" class="hidden"></span>
+        </div>
         <!-- Custom Prompt -->
         <div>
             <div class="flex items-center justify-between mb-1 cursor-pointer" onclick="toggleCustomPrompt()">
@@ -1272,7 +1282,8 @@ select option {
     let dynamicTpActive = false; // New state for Hard Stop Loss
     let hardStopLossActive = false; // New state for Hard Stop Loss
     let customPromptActive = false; // New state for Custom Prompt
-    
+    let recheckTpActive = false; // New state for Recheck TP
+
     // Debounce utility
     function debounce(func, wait) {
       let timeout;
@@ -1567,7 +1578,38 @@ select option {
             label.classList.remove('text-cyan-400', 'opacity-100');
         }
     }
-
+    // --- Recheck TP Logic ---
+    function toggleRecheckTp() {
+        recheckTpActive = !recheckTpActive;
+        updateRecheckTpUI();
+    }
+        function updateRecheckTpUI() {
+        const switchEl = document.getElementById('rechecktp-switch');
+        const knob = document.getElementById('rechecktp-knob');
+        const label = document.getElementById('rechecktp-label');
+        
+        if (recheckTpActive) {
+            switchEl.classList.remove('bg-white/10', 'border-white/10');
+            switchEl.classList.add('bg-pink-500/20', 'border-pink-500/50');
+            
+            knob.classList.add('translate-x-4');
+            knob.classList.remove('bg-white/40');
+            knob.classList.add('bg-pink-400');
+            
+            label.classList.remove('opacity-40');
+            label.classList.add('text-pink-400', 'opacity-100');
+        } else {
+            switchEl.classList.add('bg-white/10', 'border-white/10');
+            switchEl.classList.remove('bg-pink-500/20', 'border-pink-500/50');
+            
+            knob.classList.remove('translate-x-4');
+            knob.classList.add('bg-white/40');
+            knob.classList.remove('bg-pink-400');
+            
+            label.classList.add('opacity-40');
+            label.classList.remove('text-pink-400', 'opacity-100');
+        }
+    }
     // --- Hard Stop Loss Logic ---
     function toggleHardStopLoss() {
         hardStopLossActive = !hardStopLossActive;
@@ -1937,7 +1979,10 @@ select option {
             const dynTpBadge = isDynTp
                 ? `<span class="ml-1 text-[8px] font-bold text-cyan-400 bg-cyan-400/10 px-1.5 py-px rounded border border-cyan-400/20 tracking-wider">DYN</span>`
                 : ``;
-
+            const isRecheckTp = bot.recheck_tp === true;
+            const recheckTpBadge = isRecheckTp
+                ? `<span class="ml-1 text-[8px] font-bold text-pink-400 bg-pink-400/10 px-1.5 py-px rounded border border-pink-400/20 tracking-wider">RECHECK</span>`
+                : ``;
             const isHardSl = bot.hard_stop_loss === true;
             const hardSlBadge = isHardSl
                 ? `<span class="ml-1 text-[8px] font-bold text-rose-400 bg-rose-400/10 px-1.5 py-px rounded border border-rose-400/20 tracking-wider">SL</span>`
@@ -2050,6 +2095,7 @@ select option {
                                 ${counterBadge}
                                 ${aiFlipBadge}
                                 ${dynTpBadge}
+                                ${recheckTpBadge}
                                 ${hardSlBadge}
                                 ${customPromptBadge}
                             </div>
@@ -2129,6 +2175,10 @@ select option {
                 <div class="flex justify-between border-b border-white/5 pb-1">
                     <span class="opacity-60">Dynamic TP</span>
                     <span class="font-mono ${bot.dynamic_tp ? 'text-cyan-400' : ''}">${bot.dynamic_tp}</span>
+                </div>
+                <div class="flex justify-between border-b border-white/5 pb-1">
+                    <span class="opacity-60">Recheck TP</span>
+                    <span class="font-mono ${bot.recheck_tp ? 'text-pink-400' : ''}">${bot.recheck_tp}</span>
                 </div>
                 <div class="flex justify-between border-b border-white/5 pb-1">
                     <span class="opacity-60">Hard Stop Loss</span>
@@ -3387,6 +3437,8 @@ select option {
       updateAutoConfigUI();
       dynamicTpActive = false;
       updateDynamicTpUI();  
+      recheckTpActive = false;
+      updateRecheckTpUI();
       hardStopLossActive = false;
       updateHardStopLossUI();
       customPromptActive = false;
@@ -3444,6 +3496,10 @@ select option {
                 if (dynamicTpActive !== data.dynamic_tp) {
                     dynamicTpActive = data.dynamic_tp;
                     updateDynamicTpUI();
+                }
+                if (recheckTpActive !== data.recheck_tp) {
+                    recheckTpActive = data.recheck_tp;
+                    updateRecheckTpUI();
                 }
                 if (hardStopLossActive !== data.hard_stop_loss) {
                     hardStopLossActive = data.hard_stop_loss;
@@ -3539,6 +3595,7 @@ select option {
             aiflip: aiFlipActive, // Send AI Flip flag
             auto_config: autoConfigActive, // Send Auto Config flag
             dynamic_tp: dynamicTpActive, // Send Dynamic TP flag
+            recheck_tp: recheckTpActive, // Send Recheck TP flag
             hard_stop_loss: hardStopLossActive, // Send Hard Stop Loss flag
             using_custom_prompt: customPromptActive // Send Custom Prompt flag
           };
@@ -3546,7 +3603,7 @@ select option {
         try {
             const res = await axios.post(`${getApiBase()}/bot/configure`, payload);
             if (res.data.status === "started") {
-                showToast(`Auto Bot Started (${currentPersona}${counterTradeActive ? ', Against AI' : ''}${aiFlipActive ? ', Support Reversal' : ''}${autoConfigActive ? ', Dync Config' : ''}${hardStopLossActive ? ', Hard SL' : ''}${customPromptActive ? ', Custom Prompt' : ''})`);
+                showToast(`Auto Bot Started (${currentPersona}${counterTradeActive ? ', Against AI' : ''}${aiFlipActive ? ', Support Reversal' : ''}${autoConfigActive ? ', Dync Config' : ''}${hardStopLossActive ? ', Hard SL' : ''}${customPromptActive ? ', Custom Prompt' : ''}${recheckTpActive ? ', Recheck TP' : ''})`);
                 isBotRunning = true;
             } else {
                 showToast("Auto Bot Stopped");
