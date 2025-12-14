@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ngheo.fun</title>
+  <title>Ngheo.fun</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <!-- Chart.js & Date Adapter -->
@@ -1312,7 +1312,7 @@ select option {
 
     <!-- Footer -->
     <div class="text-center mt-6 opacity-60 text-xs md:text-sm">
-      <p>hyper ngheo @ 2025 • <span id="clock"></span></p>
+      <p>Hyper Ngheo @ 2025 • <span id="clock"></span></p>
     </div>
   </div>
 
@@ -3695,7 +3695,7 @@ select option {
                 const el = document.getElementById(`fgi-${interval}`);
                 if (el) {
                     let colorClass = 'text-white';
-                    const sentiment = data.fgi_sentiment || 'UNKNOWN';
+                    const sentiment = data.fgi_sentiment || 'UNK';
                     
                     if (sentiment.includes('FEAR')) colorClass = 'text-red-400';
                     else if (sentiment.includes('GREED')) colorClass = 'text-green-400';
@@ -3705,8 +3705,12 @@ select option {
                     if (sentimentText === 'XFEAR') sentimentText = 'EX.FEAR';
                     if (sentimentText === 'XGREED') sentimentText = 'EX.GREED';
 
-                    el.innerHTML = `<span class="opacity-50 mb-0.5">${interval}</span><span class="${colorClass} font-bold whitespace-nowrap">${sentimentText}(${data.fgi_value})</span>`;
-                }
+                    let valueHtml = '';
+                    if (sentiment !== 'UNK') {
+                        valueHtml = `(${data.fgi_value})`;
+                    }
+
+                    el.innerHTML = `<span class="opacity-50 mb-0.5">${interval}</span><span class="${colorClass} font-bold whitespace-nowrap">${sentimentText}${valueHtml}</span>`;                }
             } catch (e) {
                 console.error(`Error fetching FGI for ${interval}:`, e);
                 const el = document.getElementById(`fgi-${interval}`);
