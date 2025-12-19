@@ -881,7 +881,28 @@ select option {
             <p class="text-xs opacity-60">Automatically reverses position if AI detects a strong trend change.</p>
             <span id="aiflip-label" class="hidden"></span>
         </div>
-
+        <!-- FGI Flip Settings -->
+        <div class="space-y-3 pt-2 border-t border-white/5">
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <label class="text-[10px] uppercase opacity-60 block mb-1">Flip Lower (Fear)</label>
+                    <input type="number" id="fgi-lower-flip-input" value="44" class="w-full px-2 py-1 rounded bg-white/10 border border-white/10 text-sm text-center focus:border-blue-400 focus:outline-none" onchange="updateFgiSettings()">
+                </div>
+                <div class="flex-1">
+                    <label class="text-[10px] uppercase opacity-60 block mb-1">Flip Upper (Greed)</label>
+                    <input type="number" id="fgi-higher-flip-input" value="56" class="w-full px-2 py-1 rounded bg-white/10 border border-white/10 text-sm text-center focus:border-blue-400 focus:outline-none" onchange="updateFgiSettings()">
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] uppercase opacity-60 block mb-1">FGI Source</label>
+                <select id="fgi-latest-fgi-select" class="w-full px-2 py-1 rounded bg-white/10 border border-white/10 text-sm focus:border-blue-400 focus:outline-none" onchange="updateFgiSettings()">
+                    <option value="LATEST_FGI_15M">LATEST_FGI_15M</option>
+                    <option value="LATEST_FGI_30M" selected>LATEST_FGI_30M</option>
+                    <option value="LATEST_FGI_1H">LATEST_FGI_1H</option>
+                </select>
+            </div>
+            <p class="text-[11px] opacity-50 italic">Thresholds for AI Flip reversal logic.</p>
+        </div>
         <!-- Auto Config -->
         <div>
             <div class="flex items-center justify-between mb-1 cursor-pointer" onclick="toggleAutoConfig()">
@@ -1099,7 +1120,7 @@ select option {
           </div>
 
           <!-- Mini Price Chart -->
-          <div class="mb-4 relative">
+          <div class="mb-4 relative " >
             <div class="flex items-center justify-between mb-1 text-xs opacity-75">
               <div class="flex items-center gap-2">
                 <span class="flex items-center gap-1"><i class="fas fa-chart-bar text-violet-400"></i> Price Action</span>
@@ -1123,7 +1144,7 @@ select option {
               </div>
               <span id="mini-chart-label" class="text-[10px] uppercase tracking-wide"></span>
             </div>
-            <div class="glass rounded-xl p-2 relative">
+            <div class="glass rounded-xl p-2 relative bg-black/20">
               <!-- Chart Overlay Chips -->
               <div id="chart-overlay" class="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none hidden z-10">
                 <div class="bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] border border-white/10 flex items-center justify-between gap-2 shadow-lg min-w-[60px]">
@@ -1135,7 +1156,7 @@ select option {
                    <span id="overlay-pnl" class="font-mono font-bold">--</span>
                 </div>
               </div>
-              <canvas id="mini-chart" class="w-full h-[180px] cursor-crosshair"></canvas>
+              <canvas id="mini-chart" class="w-full h-[180px] cursor-crosshair "></canvas>
               <div id="mini-chart-tooltip" class="absolute hidden pointer-events-none bg-black/95 border border-violet-500/40 p-1.5 rounded text-[9px] z-50 shadow-2xl backdrop-blur-md min-w-[110px]"></div>
               <div id="mini-chart-line" class="absolute top-2 bottom-2 w-px bg-white/20 hidden pointer-events-none"></div>
             </div>
@@ -1427,6 +1448,9 @@ select option {
     let recheckTpActive = false; // New state for Recheck TP
     let fgiUpper = 62;
     let fgiLower = 38;
+      let fgiLowerFlip = 44;
+    let fgiHigherFlip = 56;
+    let fgiLatestFgi = "LATEST_FGI_30M";
     // Debounce utility
     function debounce(func, wait) {
       let timeout;
@@ -1832,9 +1856,15 @@ function updatePairDropdown() {
     function updateFgiSettings() {
         const upper = parseInt(document.getElementById('fgi-upper-input').value);
         const lower = parseInt(document.getElementById('fgi-lower-input').value);
+        const lowerFlip = parseInt(document.getElementById('fgi-lower-flip-input').value);
+        const higherFlip = parseInt(document.getElementById('fgi-higher-flip-input').value);
+        const latestFgi = document.getElementById('fgi-latest-fgi-select').value;
         
         if (!isNaN(upper)) fgiUpper = upper;
         if (!isNaN(lower)) fgiLower = lower;
+        if (!isNaN(lowerFlip)) fgiLowerFlip = lowerFlip;
+        if (!isNaN(higherFlip)) fgiHigherFlip = higherFlip;
+        if (latestFgi) fgiLatestFgi = latestFgi;
     }
 
     // --- Tab Logic ---
@@ -2355,6 +2385,18 @@ function updatePairDropdown() {
                 <div class="flex justify-between border-b border-white/5 pb-1">
                     <span class="opacity-60">FGI Lower</span>
                     <span class="font-mono text-orange-400">${bot.fgi_lower !== undefined ? bot.fgi_lower : 'N/A'}</span>
+                </div>
+                              <div class="flex justify-between border-b border-white/5 pb-1">
+                    <span class="opacity-60">FGI Flip Lower</span>
+                    <span class="font-mono text-blue-400">${bot.fgi_lower_flip !== undefined ? bot.fgi_lower_flip : 'N/A'}</span>
+                </div>
+                <div class="flex justify-between border-b border-white/5 pb-1">
+                    <span class="opacity-60">FGI Flip Upper</span>
+                    <span class="font-mono text-blue-400">${bot.fgi_higher_flip !== undefined ? bot.fgi_higher_flip : 'N/A'}</span>
+                </div>
+                <div class="flex justify-between border-b border-white/5 pb-1">
+                    <span class="opacity-60">FGI Source</span>
+                    <span class="font-mono text-blue-300">${bot.fgi_latest_fgi || 'N/A'}</span>
                 </div>
             </div>
 
@@ -3855,6 +3897,26 @@ function updatePairDropdown() {
                       customPromptActive = data.using_custom_prompt;
                       updateCustomPromptUI();
                   }
+                                    if (data.fgi_upper !== undefined) {
+                      fgiUpper = data.fgi_upper;
+                      document.getElementById('fgi-upper-input').value = fgiUpper;
+                  }
+                  if (data.fgi_lower !== undefined) {
+                      fgiLower = data.fgi_lower;
+                      document.getElementById('fgi-lower-input').value = fgiLower;
+                  }
+                  if (data.fgi_lower_flip !== undefined) {
+                      fgiLowerFlip = data.fgi_lower_flip;
+                      document.getElementById('fgi-lower-flip-input').value = fgiLowerFlip;
+                  }
+                  if (data.fgi_higher_flip !== undefined) {
+                      fgiHigherFlip = data.fgi_higher_flip;
+                      document.getElementById('fgi-higher-flip-input').value = fgiHigherFlip;
+                  }
+                  if (data.fgi_latest_fgi !== undefined) {
+                      fgiLatestFgi = data.fgi_latest_fgi;
+                      document.getElementById('fgi-latest-fgi-select').value = fgiLatestFgi;
+                  }
                 }
             }else {
                 // Reset defaults if bot is not running
@@ -3946,7 +4008,10 @@ function updatePairDropdown() {
             hard_stop_loss: hardStopLossActive, // Send Hard Stop Loss flag
             using_custom_prompt: customPromptActive, // Send Custom Prompt flag
             fgi_upper: fgiUpper,
-            fgi_lower: fgiLower
+            fgi_lower: fgiLower,
+            fgi_lower_flip: fgiLowerFlip,
+            fgi_higher_flip: fgiHigherFlip,
+            fgi_latest_fgi: fgiLatestFgi
           };
 
         try {
