@@ -960,7 +960,7 @@ select option {
             <p class="text-xs opacity-60">Uses a specialized prompt structure for AI analysis.</p>
             <span id="customprompt-label" class="hidden"></span>
         </div>
-                <div>
+        <div>
             <div class="flex items-center justify-between mb-1">
                 <span class="font-bold text-sm text-orange-400">FGI Thresholds</span>
             </div>
@@ -976,6 +976,30 @@ select option {
 
             </div>
             <p class="text-xs opacity-60 mt-1">above Upper (Greed) and below Lower (Fear) will be traded</p>
+        </div>
+                <!-- Kill Position -->
+        <div>
+            <div class="flex items-center justify-between mb-1 cursor-pointer" onclick="toggleKillPosition()">
+                <span class="font-bold text-sm text-red-500">Kill Position</span>
+                <div id="killposition-switch" class="w-9 h-5 rounded-full bg-white/10 relative transition-colors border border-white/10">
+                    <div id="killposition-knob" class="absolute left-0.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white/40 transition-all shadow-sm"></div>
+                </div>
+            </div>
+            <p class="text-xs opacity-60">Force close position if holding time exceeds limit and ROI is positive.</p>
+            <span id="killposition-label" class="hidden"></span>
+            
+            <div id="killposition-settings" class="mt-2 space-y-2 hidden">
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-[10px] uppercase opacity-60 block mb-1">Hold Time (s)</label>
+                        <input type="number" id="killposition-time-input" value="3600" class="w-full px-2 py-1 rounded bg-white/10 border border-white/10 text-sm text-center focus:border-red-400 focus:outline-none" onchange="updateKillPositionSettings()">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] uppercase opacity-60 block mb-1">Min ROI (%)</label>
+                        <input type="number" id="killposition-roi-input" value="2.0" step="0.1" class="w-full px-2 py-1 rounded bg-white/10 border border-white/10 text-sm text-center focus:border-red-400 focus:outline-none" onchange="updateKillPositionSettings()">
+                    </div>
+                </div>
+            </div>
         </div>
       </div>
     </div>
@@ -1446,6 +1470,9 @@ select option {
     let hardStopLossActive = false; // New state for Hard Stop Loss
     let customPromptActive = false; // New state for Custom Prompt
     let recheckTpActive = false; // New state for Recheck TP
+        let killPositionActive = true; // New state for Kill Position
+    let killPositionHoldingTime = 3600;
+    let killPositionRoi = 2.0;
     let fgiUpper = 62;
     let fgiLower = 38;
       let fgiLowerFlip = 44;
@@ -1852,6 +1879,51 @@ function updatePairDropdown() {
             label.classList.add('opacity-40');
             label.classList.remove('text-emerald-400', 'opacity-100');
         }
+    }
+     // --- Kill Position Logic ---
+    function toggleKillPosition() {
+        killPositionActive = !killPositionActive;
+        updateKillPositionUI();
+    }
+
+    function updateKillPositionUI() {
+        const switchEl = document.getElementById('killposition-switch');
+        const knob = document.getElementById('killposition-knob');
+        const label = document.getElementById('killposition-label');
+        const settings = document.getElementById('killposition-settings');
+        
+        if (killPositionActive) {
+            switchEl.classList.remove('bg-white/10', 'border-white/10');
+            switchEl.classList.add('bg-red-500/20', 'border-red-500/50');
+            
+            knob.classList.add('translate-x-4');
+            knob.classList.remove('bg-white/40');
+            knob.classList.add('bg-red-400');
+            
+            label.textContent = "Active";
+            label.classList.remove('opacity-40');
+            label.classList.add('text-red-400', 'opacity-100');
+            
+            settings.classList.remove('hidden');
+        } else {
+            switchEl.classList.add('bg-white/10', 'border-white/10');
+            switchEl.classList.remove('bg-red-500/20', 'border-red-500/50');
+            
+            knob.classList.remove('translate-x-4');
+            knob.classList.add('bg-white/40');
+            knob.classList.remove('bg-red-400');
+            
+            label.textContent = "Inactive";
+            label.classList.add('opacity-40');
+            label.classList.remove('text-red-400', 'opacity-100');
+            
+            settings.classList.add('hidden');
+        }
+    }
+
+    function updateKillPositionSettings() {
+        killPositionHoldingTime = parseFloat(document.getElementById('killposition-time-input').value) || 3600;
+        killPositionRoi = parseFloat(document.getElementById('killposition-roi-input').value) || 2.0;
     }
     function updateFgiSettings() {
         const upper = parseInt(document.getElementById('fgi-upper-input').value);
@@ -2378,6 +2450,20 @@ function updatePairDropdown() {
                     <span class="opacity-60">Custom Prompt</span>
                     <span class="font-mono ${bot.using_custom_prompt ? 'text-emerald-400' : ''}">${bot.using_custom_prompt}</span>
                 </div>
+                                <div class="flex justify-between border-b border-white/5 pb-1">
+                    <span class="opacity-60">Kill Position</span>
+                    <span class="font-mono ${bot.kill_position ? 'text-red-400' : ''}">${bot.kill_position ? 'Yes' : 'No'}</span>
+                </div>
+                ${bot.kill_position ? `
+                <div class="flex justify-between border-b border-white/5 pb-1 pl-2">
+                    <span class="opacity-60 text-[10px]">Kill Time</span>
+                    <span class="font-mono text-[10px]">${bot.kill_position_holding_time}s</span>
+                </div>
+                <div class="flex justify-between border-b border-white/5 pb-1 pl-2">
+                    <span class="opacity-60 text-[10px]">Kill ROI</span>
+                    <span class="font-mono text-[10px]">${bot.kill_position_roi}%</span>
+                </div>
+                ` : ''}
                                 <div class="flex justify-between border-b border-white/5 pb-1">
                     <span class="opacity-60">FGI Upper</span>
                     <span class="font-mono text-orange-400">${bot.fgi_upper !== undefined ? bot.fgi_upper : 'N/A'}</span>
@@ -4024,6 +4110,9 @@ function updatePairDropdown() {
             dynamic_tp: dynamicTpActive, // Send Dynamic TP flag
             recheck_tp: recheckTpActive, // Send Recheck TP flag
             hard_stop_loss: hardStopLossActive, // Send Hard Stop Loss flag
+                        kill_position: killPositionActive, // Send Kill Position flag
+            kill_position_holding_time: killPositionHoldingTime,
+            kill_position_roi: killPositionRoi,
             using_custom_prompt: customPromptActive, // Send Custom Prompt flag
             fgi_upper: fgiUpper,
             fgi_lower: fgiLower,
